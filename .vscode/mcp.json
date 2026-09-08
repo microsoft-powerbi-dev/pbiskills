@@ -1,0 +1,28 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "sqlserver",
+      "description": "SQL Server host, or HOST\\INSTANCE, or HOST,PORT"
+    },
+    {
+      "type": "promptString",
+      "id": "sqldb",
+      "description": "Database to connect to"
+    }
+  ],
+  "servers": {
+    "sql-server-schema": {
+      "type": "stdio",
+      "command": "python",
+      "args": [
+        "${workspaceFolder}/skills/claude-skills/sql-server-schema/scripts/sqlserver_schema_mcp.py"
+      ],
+      "cwd": "${workspaceFolder}/skills/claude-skills/sql-server-schema/scripts",
+      "env": {
+        "SQLSERVER_MCP_SERVER": "${input:sqlserver}",
+        "SQLSERVER_MCP_DATABASE": "${input:sqldb}"
+      }
+    }
+  }
+}

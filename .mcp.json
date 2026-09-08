@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "rdl-generation": {
+      "command": "python",
+      "args": [
+        "skills/claude-skills/rdl-generation/scripts/mcp_server.py"
+      ]
+    },
+    "sql-server-schema": {
+      "command": "python",
+      "args": [
+        "skills/claude-skills/sql-server-schema/scripts/sqlserver_schema_mcp.py"
+      ],
+      "env": {
+        "SQLSERVER_MCP_SERVER": "${SQLSERVER_MCP_SERVER}",
+        "SQLSERVER_MCP_DATABASE": "${SQLSERVER_MCP_DATABASE:-master}",
+        "SQLSERVER_MCP_MAX_ROWS": "100"
+      }
+    }
+  }
+}

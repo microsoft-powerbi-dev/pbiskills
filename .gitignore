@@ -9,3 +9,14 @@ build/
 .venv/
 venv/
 .env
+
+# Generated schema skill packs and digests. These name internal servers,
+# databases, tables and columns, and this repository is public. The generator
+# writes them outside the repository by default and refuses to write into
+# skills/, mcp/ or docs/ at all; these entries cover the in-repo escape hatch.
+# See skills/claude-skills/sql-server-schema/references/pii-and-public-repo-safety.md
+schema-skills-out/
+schema-digests/
+*.schema-digest.json
+schema_digest.json
+!skills/claude-skills/sql-server-schema/examples/generated-pack/schema_digest.json

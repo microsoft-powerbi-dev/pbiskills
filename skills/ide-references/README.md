@@ -7,9 +7,10 @@ environments, so the same knowledge is usable in VS Code, Devin, Cursor, and
 GitHub Copilot without a Claude-specific harness.
 
 Every file here is a derived, condensed view. The full detail (all reference
-docs, working examples, the builder and validator scripts) lives only in
-`skills/claude-skills/rdl-generation/` and
-`skills/claude-skills/ssrs-report-creation/`. When a variant below references a
+docs, working examples, the builder and validator scripts, the MCP servers)
+lives only in `skills/claude-skills/rdl-generation/`,
+`skills/claude-skills/ssrs-report-creation/`, and
+`skills/claude-skills/sql-server-schema/`. When a variant below references a
 path like `references/expressions.md`, it means the file at
 `skills/claude-skills/rdl-generation/references/expressions.md`.
 
@@ -27,3 +28,9 @@ SKILL.md or its references change materially (a new rule, a corrected
 namespace, a changed API call), update this folder's condensed copies too.
 Treat drift here as a documentation bug, not a functional one: the worst case
 is stale advice, not a broken build.
+
+One hard rule for the SQL Server variants: they describe the **static**
+`sql-server-schema` skill only, which contains no customer data. Never derive
+an IDE reference from a *generated* schema pack. Those name internal servers,
+databases, tables and columns, and this folder is committed to a public
+repository.

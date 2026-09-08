@@ -1,0 +1,473 @@
+{
+  "conventions": {
+    "audit_columns": {},
+    "primary_key_style": {
+      "count": 5,
+      "hit_rate": 0.833,
+      "value": "other"
+    },
+    "scd2_columns": [
+      "dbo.DimCustomer.EffectiveFrom",
+      "dbo.DimCustomer.IsCurrent"
+    ],
+    "soft_delete_columns": [
+      "dbo.FactOrder.IsDeleted"
+    ],
+    "string_types": {
+      "nvarchar": 1,
+      "varchar": 6
+    },
+    "table_case": {
+      "count": 5,
+      "hit_rate": 0.833,
+      "value": "PascalCase"
+    },
+    "table_names_plural": 0.0,
+    "tables_without_primary_key": {
+      "count": 1,
+      "hit_rate": 0.167
+    }
+  },
+  "coverage": {
+    "declared_relationships": 2,
+    "inferred_relationships": 1,
+    "relationship_count": 3,
+    "schemas": [
+      "dbo",
+      "stg"
+    ],
+    "table_count": 6
+  },
+  "digest_schema_version": "1.0",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "generator": "sqlserver-schema-mcp",
+  "relationships": [
+    {
+      "confidence": "declared",
+      "constraint": "FK_FactOrder_DimCustomer",
+      "from_columns": [
+        "CustomerId"
+      ],
+      "from_table": "dbo.FactOrder",
+      "to_columns": [
+        "CustomerId"
+      ],
+      "to_table": "dbo.DimCustomer",
+      "trusted": true
+    },
+    {
+      "confidence": "declared",
+      "constraint": "FK_FactOrder_DimProduct",
+      "from_columns": [
+        "ProductId"
+      ],
+      "from_table": "dbo.FactOrder",
+      "to_columns": [
+        "ProductId"
+      ],
+      "to_table": "dbo.DimProduct",
+      "trusted": true
+    },
+    {
+      "confidence": "inferred",
+      "constraint": null,
+      "from_columns": [
+        "OrderId"
+      ],
+      "from_table": "stg.stg_OrderImport",
+      "to_columns": [
+        "OrderId"
+      ],
+      "to_table": "dbo.FactOrder",
+      "trusted": false
+    }
+  ],
+  "routines": [],
+  "schemas": [],
+  "source": {
+    "collation": "SQL_Latin1_General_CP1_CI_AS",
+    "database": "SalesDW",
+    "edition": "Developer Edition (64-bit)",
+    "product_version": "15.0.4345.5",
+    "server_alias": "demo-sql"
+  },
+  "tables": [
+    {
+      "columns": [
+        {
+          "data_type": "int",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": true,
+          "name": "CustomerId",
+          "nullable": false,
+          "type": "int"
+        },
+        {
+          "data_type": "varchar",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "CustomerName",
+          "nullable": false,
+          "type": "varchar"
+        },
+        {
+          "data_type": "varchar",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "City",
+          "nullable": false,
+          "type": "varchar"
+        },
+        {
+          "data_type": "bit",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "IsCurrent",
+          "nullable": false,
+          "type": "bit"
+        },
+        {
+          "data_type": "date",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "EffectiveFrom",
+          "nullable": false,
+          "type": "date"
+        }
+      ],
+      "date_columns": [
+        "EffectiveFrom"
+      ],
+      "description": null,
+      "indexes": [],
+      "measure_columns": [],
+      "name": "DimCustomer",
+      "object_type": "USER_TABLE",
+      "primary_key": {
+        "columns": [
+          "CustomerId"
+        ],
+        "name": "PK_DimCustomer"
+      },
+      "report_reads": 0,
+      "role": "dimension",
+      "role_reasons": [
+        "name starts with an explicit dim prefix"
+      ],
+      "row_count": 52000,
+      "schema": "dbo",
+      "score": 4.686,
+      "signature": "salesdw::dbo.dimcustomer",
+      "size_mb": null,
+      "tier": 1
+    },
+    {
+      "columns": [
+        {
+          "data_type": "int",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": true,
+          "name": "ProductId",
+          "nullable": false,
+          "type": "int"
+        },
+        {
+          "data_type": "varchar",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "ProductName",
+          "nullable": false,
+          "type": "varchar"
+        },
+        {
+          "data_type": "varchar",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "CategoryCode",
+          "nullable": false,
+          "type": "varchar"
+        }
+      ],
+      "date_columns": [],
+      "description": null,
+      "indexes": [],
+      "measure_columns": [],
+      "name": "DimProduct",
+      "object_type": "USER_TABLE",
+      "primary_key": {
+        "columns": [
+          "ProductId"
+        ],
+        "name": "PK_DimProduct"
+      },
+      "report_reads": 0,
+      "role": "dimension",
+      "role_reasons": [
+        "name starts with an explicit dim prefix"
+      ],
+      "row_count": 1400,
+      "schema": "dbo",
+      "score": 4.4244,
+      "signature": "salesdw::dbo.dimproduct",
+      "size_mb": null,
+      "tier": 1
+    },
+    {
+      "columns": [
+        {
+          "data_type": "int",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": true,
+          "name": "OrderId",
+          "nullable": false,
+          "type": "int"
+        },
+        {
+          "data_type": "int",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "CustomerId",
+          "nullable": false,
+          "type": "int"
+        },
+        {
+          "data_type": "int",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "ProductId",
+          "nullable": false,
+          "type": "int"
+        },
+        {
+          "data_type": "date",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "OrderDate",
+          "nullable": false,
+          "type": "date"
+        },
+        {
+          "data_type": "decimal",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "PaidAmount",
+          "nullable": false,
+          "type": "decimal"
+        },
+        {
+          "data_type": "int",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "Quantity",
+          "nullable": false,
+          "type": "int"
+        },
+        {
+          "data_type": "bit",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "IsDeleted",
+          "nullable": false,
+          "type": "bit"
+        }
+      ],
+      "date_columns": [
+        "OrderDate"
+      ],
+      "description": null,
+      "indexes": [],
+      "measure_columns": [
+        "PaidAmount",
+        "Quantity"
+      ],
+      "name": "FactOrder",
+      "object_type": "USER_TABLE",
+      "primary_key": {
+        "columns": [
+          "OrderId"
+        ],
+        "name": "PK_FactOrder"
+      },
+      "report_reads": 0,
+      "role": "fact",
+      "role_reasons": [
+        "name starts with an explicit fact prefix"
+      ],
+      "row_count": 4000000,
+      "schema": "dbo",
+      "score": 7.1003,
+      "signature": "salesdw::dbo.factorder",
+      "size_mb": null,
+      "tier": 1
+    },
+    {
+      "columns": [
+        {
+          "data_type": "int",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": true,
+          "name": "AuditId",
+          "nullable": false,
+          "type": "int"
+        },
+        {
+          "data_type": "datetime",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "ChangedOn",
+          "nullable": false,
+          "type": "datetime"
+        }
+      ],
+      "date_columns": [
+        "ChangedOn"
+      ],
+      "description": null,
+      "indexes": [],
+      "measure_columns": [],
+      "name": "OrderAudit",
+      "object_type": "USER_TABLE",
+      "primary_key": {
+        "columns": [
+          "AuditId"
+        ],
+        "name": "PK_OrderAudit"
+      },
+      "report_reads": 0,
+      "role": "audit",
+      "role_reasons": [
+        "audit or history naming with nothing referencing it"
+      ],
+      "row_count": 900000,
+      "schema": "dbo",
+      "score": 1.0924,
+      "signature": "salesdw::dbo.orderaudit",
+      "size_mb": null,
+      "tier": 1
+    },
+    {
+      "columns": [
+        {
+          "data_type": "varchar",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "StatusCode",
+          "nullable": false,
+          "type": "varchar"
+        },
+        {
+          "data_type": "varchar",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "Description",
+          "nullable": false,
+          "type": "varchar"
+        }
+      ],
+      "date_columns": [],
+      "description": null,
+      "indexes": [],
+      "measure_columns": [],
+      "name": "StatusLookup",
+      "object_type": "USER_TABLE",
+      "primary_key": {
+        "columns": [
+          "StatusCode"
+        ],
+        "name": "PK_StatusLookup"
+      },
+      "report_reads": 0,
+      "role": "lookup",
+      "role_reasons": [
+        "small, narrow, and named as a lookup or reference table"
+      ],
+      "row_count": 8,
+      "schema": "dbo",
+      "score": 0.5505,
+      "signature": "salesdw::dbo.statuslookup",
+      "size_mb": null,
+      "tier": 1
+    },
+    {
+      "columns": [
+        {
+          "data_type": "int",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "OrderId",
+          "nullable": false,
+          "type": "int"
+        },
+        {
+          "data_type": "nvarchar",
+          "default": null,
+          "description": null,
+          "is_computed": false,
+          "is_identity": false,
+          "name": "Payload",
+          "nullable": false,
+          "type": "nvarchar"
+        }
+      ],
+      "date_columns": [],
+      "description": null,
+      "indexes": [],
+      "measure_columns": [],
+      "name": "stg_OrderImport",
+      "object_type": "USER_TABLE",
+      "primary_key": null,
+      "report_reads": 0,
+      "role": "staging",
+      "role_reasons": [
+        "name or schema marks this as staging or a backup copy"
+      ],
+      "row_count": 0,
+      "schema": "stg",
+      "score": -1.0,
+      "signature": "salesdw::stg.stg_orderimport",
+      "size_mb": null,
+      "tier": 2
+    }
+  ],
+  "warnings": []
+}
