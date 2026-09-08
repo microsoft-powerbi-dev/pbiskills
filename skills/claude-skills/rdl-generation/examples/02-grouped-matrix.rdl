@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition"
+        xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <Description>Grouped table: Region row group with a subtotal, a nested Category detail level, and a grand total row.</Description>
+  <Author>rdl-generation skill</Author>
+
+  <DataSources>
+    <DataSource Name="SalesDB">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=SQL01;Initial Catalog=Sales</ConnectString>
+        <IntegratedSecurity>true</IntegratedSecurity>
+      </ConnectionProperties>
+      <rd:SecurityType>Integrated</rd:SecurityType>
+      <rd:DataSourceID>6a2d8e11-4c9b-4f77-8e2a-1d5c9f0a3b62</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+
+  <DataSets>
+    <DataSet Name="SalesDetail">
+      <Query>
+        <DataSourceName>SalesDB</DataSourceName>
+        <CommandType>Text</CommandType>
+        <CommandText>SELECT Region, Category, Product, Quantity, Amount FROM dbo.SalesDetail ORDER BY Region, Category, Product</CommandText>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+      </Query>
+      <Fields>
+        <Field Name="Region">
+          <DataField>Region</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Category">
+          <DataField>Category</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Product">
+          <DataField>Product</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Quantity">
+          <DataField>Quantity</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="Amount">
+          <DataField>Amount</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="ReportTitle">
+            <Paragraphs><Paragraph><TextRuns><TextRun>
+              <Value>Sales by Region and Category</Value>
+              <Style><FontSize>14pt</FontSize><FontWeight>Bold</FontWeight></Style>
+            </TextRun></TextRuns></Paragraph></Paragraphs>
+            <Top>0in</Top><Left>0in</Left><Width>6.5in</Width><Height>0.3in</Height>
+          </Textbox>
+
+          <Tablix Name="RegionCategoryTable">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn><Width>1.4in</Width></TablixColumn>
+                <TablixColumn><Width>1.4in</Width></TablixColumn>
+                <TablixColumn><Width>1.7in</Width></TablixColumn>
+                <TablixColumn><Width>0.9in</Width></TablixColumn>
+                <TablixColumn><Width>1.1in</Width></TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <!-- Header row -->
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="hdr_Region"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Region</Value><Style><FontWeight>Bold</FontWeight><Color>White</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>SteelBlue</BackgroundColor><PaddingLeft>2pt</PaddingLeft></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_Category"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Category</Value><Style><FontWeight>Bold</FontWeight><Color>White</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>SteelBlue</BackgroundColor><PaddingLeft>2pt</PaddingLeft></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_Product"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Product</Value><Style><FontWeight>Bold</FontWeight><Color>White</Color></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>SteelBlue</BackgroundColor><PaddingLeft>2pt</PaddingLeft></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_Quantity"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Qty</Value><Style><FontWeight>Bold</FontWeight><Color>White</Color><TextAlign>Right</TextAlign></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>SteelBlue</BackgroundColor><PaddingRight>2pt</PaddingRight></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_Amount"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Amount</Value><Style><FontWeight>Bold</FontWeight><Color>White</Color><TextAlign>Right</TextAlign></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>SteelBlue</BackgroundColor><PaddingRight>2pt</PaddingRight></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <!-- Region group header row: region name + region subtotal -->
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="grp_Region"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Region.Value</Value><Style><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>WhiteSmoke</BackgroundColor><PaddingLeft>2pt</PaddingLeft></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="grp_CategoryBlank"><Paragraphs><Paragraph><TextRuns><TextRun><Value></Value></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="grp_ProductBlank"><Paragraphs><Paragraph><TextRuns><TextRun><Value></Value></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="grp_Quantity"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!Quantity.Value)</Value><Style><FontWeight>Bold</FontWeight><TextAlign>Right</TextAlign><Format>N0</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>WhiteSmoke</BackgroundColor><PaddingRight>2pt</PaddingRight></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="grp_Amount"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!Amount.Value)</Value><Style><FontWeight>Bold</FontWeight><TextAlign>Right</TextAlign><Format>C2</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><BackgroundColor>WhiteSmoke</BackgroundColor><PaddingRight>2pt</PaddingRight></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <!-- Category detail row: nested inside the region group -->
+                <TablixRow>
+                  <Height>0.22in</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="det_RegionBlank"><Paragraphs><Paragraph><TextRuns><TextRun><Value></Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="det_Category"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Category.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs><Style><PaddingLeft>10pt</PaddingLeft></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="det_Product"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Product.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="det_Quantity"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!Quantity.Value)</Value><Style><TextAlign>Right</TextAlign><Format>N0</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><PaddingRight>2pt</PaddingRight></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="det_Amount"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!Amount.Value)</Value><Style><TextAlign>Right</TextAlign><Format>C2</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><PaddingRight>2pt</PaddingRight></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <!-- Grand total row -->
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="tot_Label"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Grand Total</Value><Style><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><TopBorder><Style>Solid</Style><Width>1pt</Width></TopBorder></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="tot_CategoryBlank"><Paragraphs><Paragraph><TextRuns><TextRun><Value></Value></TextRun></TextRuns></Paragraph></Paragraphs><Style><TopBorder><Style>Solid</Style><Width>1pt</Width></TopBorder></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="tot_ProductBlank"><Paragraphs><Paragraph><TextRuns><TextRun><Value></Value></TextRun></TextRuns></Paragraph></Paragraphs><Style><TopBorder><Style>Solid</Style><Width>1pt</Width></TopBorder></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="tot_Quantity"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!Quantity.Value)</Value><Style><FontWeight>Bold</FontWeight><TextAlign>Right</TextAlign><Format>N0</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><TopBorder><Style>Solid</Style><Width>1pt</Width></TopBorder><PaddingRight>2pt</PaddingRight></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="tot_Amount"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!Amount.Value)</Value><Style><FontWeight>Bold</FontWeight><TextAlign>Right</TextAlign><Format>C2</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><TopBorder><Style>Solid</Style><Width>1pt</Width></TopBorder><PaddingRight>2pt</PaddingRight></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <!-- static header member -->
+                <TablixMember>
+                  <RepeatOnNewPage>true</RepeatOnNewPage>
+                </TablixMember>
+                <!-- Region group: contains the nested Category member -->
+                <TablixMember>
+                  <Group Name="RegionGroup">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!Region.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <KeepWithGroup>After</KeepWithGroup>
+                  <TablixMembers>
+                    <TablixMember>
+                      <Group Name="CategoryGroup">
+                        <GroupExpressions>
+                          <GroupExpression>=Fields!Category.Value</GroupExpression>
+                        </GroupExpressions>
+                      </Group>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+                <!-- static grand-total member: no Group, so it renders once for the whole Tablix -->
+                <TablixMember />
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>SalesDetail</DataSetName>
+            <Top>0.4in</Top>
+            <Left>0in</Left>
+            <Height>0.97in</Height>
+            <Width>6.5in</Width>
+          </Tablix>
+        </ReportItems>
+        <Height>1.5in</Height>
+      </Body>
+      <Width>6.5in</Width>
+      <Page>
+        <PageHeight>11in</PageHeight>
+        <PageWidth>8.5in</PageWidth>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>1in</TopMargin>
+        <BottomMargin>1in</BottomMargin>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+</Report>

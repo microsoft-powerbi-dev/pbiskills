@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition"
+        xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <Description>Column chart with a category hierarchy and legend, plus a flat table of the same data underneath (a common real-world pairing).</Description>
+  <Author>rdl-generation skill</Author>
+
+  <DataSources>
+    <DataSource Name="SalesDB">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=SQL01;Initial Catalog=Sales</ConnectString>
+        <IntegratedSecurity>true</IntegratedSecurity>
+      </ConnectionProperties>
+      <rd:SecurityType>Integrated</rd:SecurityType>
+      <rd:DataSourceID>9d4b7f22-3a1e-4c88-9b6a-2f7e8c1d0a55</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+
+  <DataSets>
+    <DataSet Name="SalesByRegion">
+      <Query>
+        <DataSourceName>SalesDB</DataSourceName>
+        <CommandType>Text</CommandType>
+        <CommandText>SELECT Region, Amount, Units FROM dbo.RegionSummary ORDER BY Region</CommandText>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+      </Query>
+      <Fields>
+        <Field Name="Region">
+          <DataField>Region</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Amount">
+          <DataField>Amount</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+        <Field Name="Units">
+          <DataField>Units</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Chart Name="SalesChart">
+            <ChartCategoryHierarchy>
+              <ChartMembers>
+                <ChartMember>
+                  <Group Name="RegionCategory">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!Region.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <Label>=Fields!Region.Value</Label>
+                </ChartMember>
+              </ChartMembers>
+            </ChartCategoryHierarchy>
+            <ChartSeriesHierarchy>
+              <ChartMembers>
+                <ChartMember>
+                  <Label>Amount</Label>
+                </ChartMember>
+              </ChartMembers>
+            </ChartSeriesHierarchy>
+            <ChartData>
+              <ChartSeriesCollection>
+                <ChartSeries Name="AmountSeries">
+                  <Type>Column</Type>
+                  <Subtype>Clustered</Subtype>
+                  <ChartDataPoints>
+                    <ChartDataPoint>
+                      <ChartDataPointValues>
+                        <Y>=Sum(Fields!Amount.Value)</Y>
+                      </ChartDataPointValues>
+                    </ChartDataPoint>
+                  </ChartDataPoints>
+                </ChartSeries>
+              </ChartSeriesCollection>
+            </ChartData>
+            <ChartLegends>
+              <ChartLegend Name="Legend1">
+                <Position>BottomCenter</Position>
+              </ChartLegend>
+            </ChartLegends>
+            <ChartTitles>
+              <ChartTitle Name="Title1">
+                <Caption>Sales Amount by Region</Caption>
+                <Style><FontWeight>Bold</FontWeight><FontSize>11pt</FontSize></Style>
+              </ChartTitle>
+            </ChartTitles>
+            <DataSetName>SalesByRegion</DataSetName>
+            <Top>0.1in</Top>
+            <Left>0in</Left>
+            <Height>2.5in</Height>
+            <Width>6.5in</Width>
+            <Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style>
+          </Chart>
+
+          <Tablix Name="SalesTable">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn><Width>2.5in</Width></TablixColumn>
+                <TablixColumn><Width>2in</Width></TablixColumn>
+                <TablixColumn><Width>2in</Width></TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="hdr_Region"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Region</Value><Style><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_Amount"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Amount</Value><Style><FontWeight>Bold</FontWeight><TextAlign>Right</TextAlign></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_Units"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Units</Value><Style><FontWeight>Bold</FontWeight><TextAlign>Right</TextAlign></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.22in</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="val_Region"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Region.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="val_Amount"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Amount.Value</Value><Style><TextAlign>Right</TextAlign><Format>C2</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="val_Units"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Units.Value</Value><Style><TextAlign>Right</TextAlign><Format>N0</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember>
+                  <Group Name="TableRegionGroup">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!Region.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>SalesByRegion</DataSetName>
+            <Top>2.75in</Top>
+            <Left>0in</Left>
+            <Height>0.47in</Height>
+            <Width>6.5in</Width>
+          </Tablix>
+        </ReportItems>
+        <Height>3.4in</Height>
+      </Body>
+      <Width>6.5in</Width>
+      <Page>
+        <PageHeight>11in</PageHeight>
+        <PageWidth>8.5in</PageWidth>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>1in</TopMargin>
+        <BottomMargin>1in</BottomMargin>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+</Report>

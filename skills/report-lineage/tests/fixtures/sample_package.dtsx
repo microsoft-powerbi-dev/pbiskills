@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<DTS:Executable
+  xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:ObjectName="SamplePackage">
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager DTS:ObjectName="OrdersDW_Destination_DB" DTS:DTSID="{11111111-1111-1111-1111-111111111111}">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager DTS:ConnectionString="Data Source=SQL-PROD-01;Initial Catalog=OrdersDW;Provider=SQLNCLI11.1;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Executables>
+    <DTS:Executable DTS:ExecutableType="Microsoft.Pipeline" DTS:ObjectName="Load Sales Data">
+      <DTS:ObjectData>
+        <pipeline version="1">
+          <components>
+            <component componentClassID="Microsoft.OLEDBSource" name="Extract Orders">
+              <properties>
+                <property name="OpenRowset">[dbo].[SourceOrders]</property>
+              </properties>
+              <connections>
+                <connection connectionManagerRefId="Package.ConnectionManagers[OrdersDW_Destination_DB]" connectionManagerID="{11111111-1111-1111-1111-111111111111}:external" />
+              </connections>
+            </component>
+            <component componentClassID="Microsoft.OLEDBDestination" name="Load Sales">
+              <properties>
+                <property name="OpenRowset">[dbo].[Sales]</property>
+              </properties>
+              <connections>
+                <connection connectionManagerRefId="Package.ConnectionManagers[OrdersDW_Destination_DB]" connectionManagerID="{11111111-1111-1111-1111-111111111111}:external" />
+              </connections>
+            </component>
+          </components>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable DTS:ExecutableType="Microsoft.ExecuteSQLTask" DTS:ObjectName="Refresh Sales Summary">
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{11111111-1111-1111-1111-111111111111}"
+          SQLTask:SqlStatementSource="EXEC Integration.RefreshSalesSummary;"
+          xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+</DTS:Executable>

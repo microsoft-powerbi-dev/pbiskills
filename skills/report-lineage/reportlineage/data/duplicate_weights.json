@@ -1,0 +1,47 @@
+{
+  "reference_version": "reportlineage-0.1",
+  "_comment": "Judgments-as-data for duplicate/overlap detection and reuse search. dimension_weights are relative and sum to 1.0; they are renormalised over the dimensions both reports actually populate, so the ratios matter more than the absolute numbers.",
+
+  "dimension_weights": {
+    "sql": 0.28,
+    "tables": 0.24,
+    "columns": 0.24,
+    "parameters": 0.10,
+    "visuals": 0.10,
+    "name": 0.04
+  },
+
+  "_thresholds_comment": "identical: same query and field list, differing only cosmetically. near_duplicate: one is a variant or copy of the other. overlapping: substantial shared surface, worth consolidating onto one model. related: shares a subject area only, reported for context, never auto-actioned.",
+  "verdict_thresholds": {
+    "identical": 0.95,
+    "near_duplicate": 0.82,
+    "overlapping": 0.62,
+    "related": 0.45
+  },
+
+  "_cluster_comment": "A pair must reach cluster_min_similarity to join a consolidation cluster. Clusters below action_min_similarity are proposed for review rather than a concrete merge or retire.",
+  "cluster_min_similarity": 0.62,
+  "action_min_similarity": 0.82,
+
+  "_candidate_comment": "Blocking: only pairs sharing at least one table, or min_shared_columns columns, are scored, which keeps a whole-estate sweep near-linear instead of O(n^2).",
+  "min_shared_columns": 3,
+
+  "_reuse_comment": "Weights for does a report like this already exist. Term overlap dominates because the request is natural language, not a schema.",
+  "reuse_weights": {
+    "terms": 0.5,
+    "tables": 0.3,
+    "columns": 0.2
+  },
+  "reuse_thresholds": {
+    "reuse_as_is": 0.72,
+    "extend": 0.45,
+    "reference": 0.22
+  },
+
+  "limits": {
+    "max_pairs_reported": 500,
+    "max_shared_sample": 12,
+    "max_reuse_matches": 10,
+    "max_cluster_unique_columns": 15
+  }
+}

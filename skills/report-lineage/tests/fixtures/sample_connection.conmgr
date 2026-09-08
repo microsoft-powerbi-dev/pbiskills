@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<DTS:ConnectionManager
+  xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:ObjectName="OrdersDW_Destination_DB"
+  DTS:DTSID="{11111111-1111-1111-1111-111111111111}"
+  DTS:CreationName="OLEDB">
+  <DTS:ObjectData>
+    <DTS:ConnectionManager DTS:ConnectionString="Data Source=SQL-PROD-01;Initial Catalog=OrdersDW;Provider=SQLNCLI11.1;" />
+  </DTS:ObjectData>
+</DTS:ConnectionManager>

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition"
+        xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <Description>Stored-procedure dataset with a single-value date parameter and a multi-value region parameter. The target procedure (dbo.usp_SalesByDateAndRegion) is expected to receive @Region as a comma-joined string and split it internally with STRING_SPLIT(@Region, ','), since a stored procedure call cannot bind a native multi-value array parameter.</Description>
+  <Author>rdl-generation skill</Author>
+
+  <DataSources>
+    <DataSource Name="SalesDB">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=SQL01;Initial Catalog=Sales</ConnectString>
+        <IntegratedSecurity>true</IntegratedSecurity>
+      </ConnectionProperties>
+      <rd:SecurityType>Integrated</rd:SecurityType>
+      <rd:DataSourceID>1c6e9a33-8f2d-4b19-a7c4-5e0d3b9f2a71</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+
+  <DataSets>
+    <DataSet Name="SalesByDateAndRegion">
+      <Query>
+        <DataSourceName>SalesDB</DataSourceName>
+        <CommandType>StoredProcedure</CommandType>
+        <CommandText>dbo.usp_SalesByDateAndRegion</CommandText>
+        <QueryParameters>
+          <QueryParameter Name="@StartDate">
+            <Value>=Parameters!StartDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Region">
+            <Value>=Join(Parameters!Region.Value, ",")</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+      </Query>
+      <Fields>
+        <Field Name="OrderDate">
+          <DataField>OrderDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="Region">
+          <DataField>Region</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="Amount">
+          <DataField>Amount</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+
+  <ReportParameters>
+    <ReportParameter Name="StartDate">
+      <DataType>DateTime</DataType>
+      <Nullable>false</Nullable>
+      <DefaultValue>
+        <Values><Value>2026-01-01T00:00:00</Value></Values>
+      </DefaultValue>
+      <Prompt>Start Date</Prompt>
+    </ReportParameter>
+    <ReportParameter Name="Region">
+      <DataType>String</DataType>
+      <Nullable>false</Nullable>
+      <DefaultValue>
+        <Values>
+          <Value>East</Value>
+          <Value>West</Value>
+        </Values>
+      </DefaultValue>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Region (multi-select; the procedure splits this with STRING_SPLIT)</Prompt>
+      <MultiValue>true</MultiValue>
+      <ValidValues>
+        <ParameterValues>
+          <ParameterValue><Value>East</Value><Label>East</Label></ParameterValue>
+          <ParameterValue><Value>West</Value><Label>West</Label></ParameterValue>
+          <ParameterValue><Value>North</Value><Label>North</Label></ParameterValue>
+          <ParameterValue><Value>South</Value><Label>South</Label></ParameterValue>
+        </ParameterValues>
+      </ValidValues>
+    </ReportParameter>
+  </ReportParameters>
+
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Tablix Name="SalesTable">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn><Width>1.8in</Width></TablixColumn>
+                <TablixColumn><Width>2.2in</Width></TablixColumn>
+                <TablixColumn><Width>2.2in</Width></TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="hdr_OrderDate"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Order Date</Value><Style><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_Region"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Region</Value><Style><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_Amount"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Amount</Value><Style><FontWeight>Bold</FontWeight><TextAlign>Right</TextAlign></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.22in</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="val_OrderDate"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!OrderDate.Value</Value><Style><Format>d</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="val_Region"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Region.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="val_Amount"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!Amount.Value</Value><Style><TextAlign>Right</TextAlign><Format>C2</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember>
+                  <Group Name="DetailGroup" />
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>SalesByDateAndRegion</DataSetName>
+            <Top>0.25in</Top>
+            <Left>0.25in</Left>
+            <Height>0.47in</Height>
+            <Width>6.2in</Width>
+          </Tablix>
+        </ReportItems>
+        <Height>0.97in</Height>
+      </Body>
+      <Width>6.5in</Width>
+      <Page>
+        <PageHeight>11in</PageHeight>
+        <PageWidth>8.5in</PageWidth>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>1in</TopMargin>
+        <BottomMargin>1in</BottomMargin>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+</Report>

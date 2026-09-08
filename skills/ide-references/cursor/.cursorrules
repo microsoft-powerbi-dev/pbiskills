@@ -1,0 +1,67 @@
+# SSRS / RDL rules for this repository
+
+These rules apply whenever a change touches an `.rdl` file, generates one, or
+concerns SSRS / Power BI Paginated report creation.
+
+## RDL structure
+
+- Target RDL 2016 (`http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition`)
+  unless the file already declares an older schema; preserve whatever version
+  an existing file uses rather than upgrading it silently.
+- Element order matters. Inside `DataSet/Query`: `DataSourceName`, then
+  `CommandType`, then `CommandText`, in that order, no exceptions.
+- `PageHeader` and `PageFooter` are children of `ReportSection/Page`, not of
+  `Report`.
+- Register the default namespace and the `rd` prefix
+  (`http://schemas.microsoft.com/SQLServer/reporting/reportdesigner`) before
+  serialising any generated XML.
+- Every measurement (`Top`, `Left`, `Width`, `Height`, `PageWidth`,
+  `PageHeight`, margins) carries a unit suffix: `in`, `cm`, `mm`, `pt`, or
+  `px`. Never emit a bare number.
+
+## Expressions
+
+- Use `=Fields!Name.Value` for a field reference and
+  `=Sum(Fields!Name.Value)` (or `Avg`, `Min`, `Max`, `Count`, `CountDistinct`)
+  for an aggregate. Do not write an equivalent form that a reader would have
+  to parse differently.
+- Before referencing `Fields!X.Value` anywhere, confirm `X` is declared as a
+  `Field` in the `DataSet` the enclosing region's `DataSetName` points to.
+  An unresolved field reference renders `#Error` at runtime with no build-time
+  warning, so check it by reading the file, not by assuming.
+
+## Datasets and parameters
+
+- Prefer a shared data source over an embedded connection string when more
+  than one report will use it.
+- Prefer a stored procedure or a view over inline SQL for any non-trivial
+  query.
+- Give every `ReportParameter` a `Prompt`, a `DataType`, and a default value
+  where one makes sense.
+- A multi-value parameter cannot bind directly to a stored procedure
+  parameter. Join it into a delimited string
+  (`Join(Parameters!P.Value, ",")`) and split it server-side, or use a
+  table-valued parameter.
+
+## Anti-patterns to flag in review
+
+`SELECT *`, `SELECT DISTINCT` used to hide a join fan-out, leading-wildcard
+`LIKE '%...'`, cross joins, cursors, `IIf` nested more than two levels,
+chained `Replace()` calls, embedded `Integrated Security` connection strings,
+and more than about five Tablix or Chart regions on one report.
+
+## Before finishing any RDL change
+
+1. Confirm the file still parses as well-formed XML.
+2. Confirm every `Fields!X.Value` and every `DataSetName` resolves.
+3. Confirm every measurement has a unit.
+4. Confirm `PageHeader` / `PageFooter` are inside `Page`.
+
+## Full reference
+
+`skills/claude-skills/rdl-generation/` (RDL authoring: structure, datasets,
+Tablix/Chart, expressions, units, schema versions, a validator script, and
+five working examples) and
+`skills/claude-skills/ssrs-report-creation/` (the end-to-end workflow:
+requirements, data sources, design patterns, export, deployment,
+performance, Fabric migration).

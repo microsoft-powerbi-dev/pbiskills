@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition"
+        xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <Description>Main report demonstrating a PageHeader with a title textbox, a PageFooter with page-number expressions, and a Subreport element that passes one parameter through. This file shows the Subreport element shape only: the referenced child report ("OrderLineItems") is not included as a separate file in this examples folder.</Description>
+  <Author>rdl-generation skill</Author>
+
+  <DataSources>
+    <DataSource Name="SalesDB">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=SQL01;Initial Catalog=Sales</ConnectString>
+        <IntegratedSecurity>true</IntegratedSecurity>
+      </ConnectionProperties>
+      <rd:SecurityType>Integrated</rd:SecurityType>
+      <rd:DataSourceID>4e8b1f66-2c7a-4d90-8b3e-6f1a9d2c0e83</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+
+  <DataSets>
+    <DataSet Name="Orders">
+      <Query>
+        <DataSourceName>SalesDB</DataSourceName>
+        <CommandType>Text</CommandType>
+        <CommandText>SELECT OrderID, OrderDate, CustomerName, TotalAmount FROM dbo.Orders ORDER BY OrderDate DESC</CommandText>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+      </Query>
+      <Fields>
+        <Field Name="OrderID">
+          <DataField>OrderID</DataField>
+          <rd:TypeName>System.Int32</rd:TypeName>
+        </Field>
+        <Field Name="OrderDate">
+          <DataField>OrderDate</DataField>
+          <rd:TypeName>System.DateTime</rd:TypeName>
+        </Field>
+        <Field Name="CustomerName">
+          <DataField>CustomerName</DataField>
+          <rd:TypeName>System.String</rd:TypeName>
+        </Field>
+        <Field Name="TotalAmount">
+          <DataField>TotalAmount</DataField>
+          <rd:TypeName>System.Decimal</rd:TypeName>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Tablix Name="OrdersTable">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn><Width>0.9in</Width></TablixColumn>
+                <TablixColumn><Width>1.3in</Width></TablixColumn>
+                <TablixColumn><Width>2.3in</Width></TablixColumn>
+                <TablixColumn><Width>1.5in</Width></TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="hdr_OrderID"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Order #</Value><Style><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_OrderDate"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Date</Value><Style><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_CustomerName"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Customer</Value><Style><FontWeight>Bold</FontWeight></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="hdr_TotalAmount"><Paragraphs><Paragraph><TextRuns><TextRun><Value>Total</Value><Style><FontWeight>Bold</FontWeight><TextAlign>Right</TextAlign></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border><BackgroundColor>WhiteSmoke</BackgroundColor></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.22in</Height>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="val_OrderID"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!OrderID.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="val_OrderDate"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!OrderDate.Value</Value><Style><Format>d</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="val_CustomerName"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!CustomerName.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="val_TotalAmount"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!TotalAmount.Value</Value><Style><TextAlign>Right</TextAlign><Format>C2</Format></Style></TextRun></TextRuns></Paragraph></Paragraphs><Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember>
+                  <Group Name="OrderDetail" />
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>Orders</DataSetName>
+            <Top>0.25in</Top>
+            <Left>0in</Left>
+            <Height>0.47in</Height>
+            <Width>6.5in</Width>
+          </Tablix>
+
+          <!-- Subreport element shape: ReportName is a placeholder for a child
+               report that is not shipped in this examples folder. Swap it for
+               a real published report name / path before running this file. -->
+          <Subreport Name="OrderLineItemsSubreport">
+            <ReportName>OrderLineItems</ReportName>
+            <Parameters>
+              <Parameter Name="OrderID">
+                <Value>=Fields!OrderID.Value</Value>
+              </Parameter>
+            </Parameters>
+            <NoRowsMessage>No line items found.</NoRowsMessage>
+            <Top>1in</Top>
+            <Left>0in</Left>
+            <Height>1.5in</Height>
+            <Width>6.5in</Width>
+            <Style><Border><Style>Solid</Style><Color>LightGrey</Color></Border></Style>
+          </Subreport>
+        </ReportItems>
+        <Height>2.5in</Height>
+      </Body>
+      <Width>6.5in</Width>
+      <Page>
+        <PageHeader>
+          <Height>0.4in</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+            <Textbox Name="ReportTitle">
+              <Paragraphs><Paragraph><TextRuns><TextRun>
+                <Value>Orders Report</Value>
+                <Style><FontWeight>Bold</FontWeight><FontSize>13pt</FontSize></Style>
+              </TextRun></TextRuns></Paragraph></Paragraphs>
+              <Top>0in</Top>
+              <Left>0in</Left>
+              <Height>0.3in</Height>
+              <Width>6.5in</Width>
+            </Textbox>
+          </ReportItems>
+        </PageHeader>
+        <PageFooter>
+          <Height>0.25in</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+            <Textbox Name="PageNumberFooter">
+              <Paragraphs><Paragraph><TextRuns><TextRun>
+                <Value>="Page " &amp; Globals!PageNumber &amp; " of " &amp; Globals!TotalPages</Value>
+                <Style><FontSize>8pt</FontSize><Color>Gray</Color><TextAlign>Center</TextAlign></Style>
+              </TextRun></TextRuns></Paragraph></Paragraphs>
+              <Top>0in</Top>
+              <Left>0in</Left>
+              <Height>0.25in</Height>
+              <Width>6.5in</Width>
+            </Textbox>
+          </ReportItems>
+        </PageFooter>
+        <PageHeight>11in</PageHeight>
+        <PageWidth>8.5in</PageWidth>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>1in</TopMargin>
+        <BottomMargin>1in</BottomMargin>
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+</Report>

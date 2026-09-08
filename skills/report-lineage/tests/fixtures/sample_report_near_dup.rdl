@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Report xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition"
+        xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner">
+  <DataSources>
+    <DataSource Name="OrdersDB">
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=SQL-PROD-01;Initial Catalog=OrdersDW</ConnectString>
+      </ConnectionProperties>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="SalesRegionData">
+      <Query>
+        <DataSourceName>OrdersDB</DataSourceName>
+        <CommandText>SELECT s.SaleId, s.Amount, r.RegionName FROM dbo.Sales s JOIN dbo.Region r ON s.RegionId = r.RegionId WHERE s.Amount &gt; 0</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="SaleId"><DataField>SaleId</DataField><rd:TypeName>System.Int32</rd:TypeName></Field>
+        <Field Name="Amount"><DataField>Amount</DataField><rd:TypeName>System.Decimal</rd:TypeName></Field>
+        <Field Name="RegionName"><DataField>RegionName</DataField><rd:TypeName>System.String</rd:TypeName></Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportParameters>
+    <ReportParameter Name="FiscalYear">
+      <DataType>Integer</DataType>
+      <DefaultValue><Values><Value>2026</Value></Values></DefaultValue>
+      <Prompt>Fiscal Year</Prompt>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Tablix Name="SalesTablixCopy">
+            <DataSetName>SalesRegionData</DataSetName>
+            <Top>0.25in</Top>
+            <Left>0.25in</Left>
+            <Height>2in</Height>
+            <Width>6in</Width>
+            <TablixBody>
+              <TablixColumns/>
+              <TablixRows>
+                <TablixRow>
+                  <TablixCells>
+                    <TablixCell><CellContents><Textbox Name="t1"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Fields!RegionName.Value</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                    <TablixCell><CellContents><Textbox Name="t2"><Paragraphs><Paragraph><TextRuns><TextRun><Value>=Sum(Fields!Amount.Value)</Value></TextRun></TextRuns></Paragraph></Paragraphs></Textbox></CellContents></TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <Group Name="RegionGroup"><GroupExpressions><GroupExpression>=Fields!RegionName.Value</GroupExpression></GroupExpressions></Group>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <TablixColumnHierarchy><TablixMembers><TablixMember/></TablixMembers></TablixColumnHierarchy>
+          </Tablix>
+        </ReportItems>
+        <Height>3in</Height>
+      </Body>
+      <Width>8.5in</Width>
+      <Page><PageHeight>11in</PageHeight></Page>
+    </ReportSection>
+  </ReportSections>
+</Report>
