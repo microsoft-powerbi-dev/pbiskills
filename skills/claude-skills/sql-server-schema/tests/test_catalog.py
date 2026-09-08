@@ -272,6 +272,25 @@ def test_sample_rows_drops_columns_that_are_not_real():
         catalog.sample_rows(conn, "dbo.Order", ["NotAColumn"], limit=5)
 
 
+def test_columns_query_casts_sql_variant_columns_to_a_decodable_type():
+    """Regression: sys.identity_columns.seed_value/increment_value and
+    sys.extended_properties.value are typed sql_variant, which pyodbc cannot
+    decode at all (ODBC SQL type -25), even under an explicit CAST AS
+    sql_variant back to the client. Found live against SQL Server 2025 /
+    LocalDB 17.0.925.4. The fix must live in the SQL text, casting to a type
+    pyodbc understands before the value crosses the wire.
+    """
+    assert "CAST(ic.seed_value AS BIGINT)" in catalog.SQL_COLUMNS
+    assert "CAST(ic.increment_value AS BIGINT)" in catalog.SQL_COLUMNS
+    assert "CAST(ep.value AS NVARCHAR(MAX))" in catalog.SQL_COLUMNS
+    assert "CAST(ep.value AS NVARCHAR(MAX))" in catalog.SQL_TABLES
+    # And not the raw, undecodable form anywhere in either query.
+    for sql in (catalog.SQL_COLUMNS, catalog.SQL_TABLES):
+        assert "    ep.value" not in sql
+        assert "    ic.seed_value,\n" not in sql
+        assert "    ic.increment_value,\n" not in sql
+
+
 def test_sample_rows_quotes_catalog_sourced_identifiers():
     conn = _describe_conn()
     catalog.sample_rows(conn, "dbo.Order", ["OrderId", "CustomerId"], limit=3)

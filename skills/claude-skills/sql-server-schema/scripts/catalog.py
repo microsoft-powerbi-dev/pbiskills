@@ -99,7 +99,9 @@ SELECT
     o.modify_date,
     ISNULL(ps.row_count, 0)                                    AS row_count,
     CAST(ISNULL(ps.reserved_mb, 0) AS DECIMAL(18,2))           AS size_mb,
-    ep.value                                                   AS description
+    -- sys.extended_properties.value is sql_variant; pyodbc cannot decode it
+    -- at all, so cast to text before it crosses the wire.
+    CAST(ep.value AS NVARCHAR(MAX))                            AS description
 FROM sys.objects AS o
 JOIN sys.schemas AS s ON s.schema_id = o.schema_id
 LEFT JOIN (
@@ -139,9 +141,15 @@ SELECT
     c.collation_name,
     dc.definition                                 AS default_definition,
     cc.definition                                 AS computed_definition,
-    ic.seed_value,
-    ic.increment_value,
-    ep.value                                      AS description
+    -- sys.identity_columns.seed_value/increment_value are typed sql_variant,
+    -- which pyodbc cannot decode at all (fails even under an explicit CAST AS
+    -- sql_variant back to the client). Cast to bigint in T-SQL so the value
+    -- never crosses the wire as a variant. An identity seed/increment outside
+    -- bigint range is not a case this skill needs to support.
+    CAST(ic.seed_value AS BIGINT)                 AS seed_value,
+    CAST(ic.increment_value AS BIGINT)            AS increment_value,
+    -- sys.extended_properties.value is sql_variant for the same reason.
+    CAST(ep.value AS NVARCHAR(MAX))               AS description
 FROM sys.columns AS c
 JOIN sys.types AS t ON t.user_type_id = c.user_type_id
 LEFT JOIN sys.default_constraints AS dc ON dc.object_id = c.default_object_id
