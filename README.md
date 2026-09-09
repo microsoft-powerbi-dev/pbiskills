@@ -20,6 +20,18 @@ docs/       Background reading: two different ways to drive an SSRS-to-Power-BI
             with Devin, Windsurf, or Microsoft's own Fabric skills.
 ```
 
+## Full component documentation
+
+`docs/COMPONENT-GUIDE.md` is the detailed reference index: every MCP server,
+every skill under `skills/claude-skills/`, the `skills/report-lineage/`
+package, and the vendored/IDE-integration material, each documented module by
+module and function by function against the actual source, with three real
+discrepancies flagged (an `mssql_list_relationships` inference no-op, two
+undocumented-but-unimplemented `extract-engine` features, and a missing SSRF
+guard in `report-lineage`'s Report Server scanner). Read this README's own
+Quick start below first for the short version; go to the component guide when
+you need exact function signatures, CLI flags, or file formats.
+
 ## Quick start
 
 **Using a skill in Claude Code or Cowork**: point the tool at a `SKILL.md`
