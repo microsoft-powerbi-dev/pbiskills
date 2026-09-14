@@ -17,8 +17,14 @@ Sheet-to-table mapping:
                      for clarity, merged here.
     ExtractParameters -> feed.anchor_date_default / window_years_default
     OutputLayout      -> feed.emit_header_row / emit_trailer_row /
-                         emit_concat_ws_line only (column order is already
-                         FieldMap.ordinal)
+                         emit_concat_ws_line / line_ending / null_sentinel /
+                         max_rows_per_file (column order is NOT here - it is
+                         always FieldMap.ordinal)
+
+Every meta.feed column above is genuinely written by upsert(). A blank or
+omitted optional setting keeps the database's existing value (its DDL default
+for a new feed), so dropping an optional sheet never silently resets a
+deliberately configured setting.
 
 Validation runs entirely before any database write, and needs a connection
 only for the one check that genuinely requires one (a calculator/lookup table
@@ -41,11 +47,164 @@ from . import rules as rules_mod
 REQUIRED_SHEETS = ("Feed", "Datasets", "FieldMap")
 OPTIONAL_SHEETS = ("Lookups", "KeyGeneration", "ExtractParameters", "OutputLayout")
 
+# The neutral data_type tokens meta.field_map.data_type accepts, kept in
+# lockstep with query_builder.data_type_to_polars - a token this pattern
+# admits but that function cannot map is a config write that commits and then
+# fails at read-plan time.
+#
+# The character-type alternatives are written as n?varchar/n?char with the
+# length group INSIDE the parentheses on purpose. The previous form,
+# "nvarchar\(\d+|MAX\)", split the opening and closing parens across the |,
+# so it matched the unterminated "nvarchar(50" or the bare literal "MAX)"
+# but never "nvarchar(50)" or "varchar(MAX)" - rejecting every NVARCHAR and
+# every MAX-length column an author could legitimately write.
 _DATA_TYPE_PATTERN = re.compile(
-    r"^(int|bigint|bit|date|datetime|datetime2|varchar\(\d+\)|nvarchar\(\d+|MAX\)|"
-    r"char\(\d+\)|nchar\(\d+\)|decimal\(\d+,\s*\d+\))$",
+    r"^(int|bigint|bit|date|datetime2|datetime"
+    r"|n?varchar\((?:\d+|MAX)\)"
+    r"|n?char\(\d+\)"
+    r"|decimal\(\s*\d+\s*,\s*\d+\s*\))$",
     re.IGNORECASE,
 )
+
+
+# ---------------------------------------------------------------------------
+# Optional meta.feed settings a workbook may supply.
+#
+# These used to be parsed, validated, and then silently dropped: upsert()
+# wrote only feed_name/source_server/source_database/delimiter/
+# collision_action/collision_char/output_root, so every value on the
+# ExtractParameters and OutputLayout sheets - and Feed's own
+# default_execution_mode - was inert, and the feed always ran on
+# seed_schema.sql's DDL defaults instead. They are persisted now.
+#
+# A blank or absent cell means "leave whatever the database already has"
+# (its DDL default for a new feed, its current value for an existing one),
+# never "overwrite with NULL" - otherwise omitting an optional sheet would
+# silently reset settings an operator had deliberately configured.
+# ---------------------------------------------------------------------------
+
+# Where an author is expected to write each setting, used only to point a
+# validation message at the right sheet. load_workbook folds all three sheets
+# into one feed dict, with the Feed sheet taking precedence.
+_FEED_SETTING_SHEET = {
+    "collision_action": "Feed",
+    "line_ending": "OutputLayout",
+    "null_sentinel": "OutputLayout",
+    "max_rows_per_file": "OutputLayout",
+    "emit_header_row": "OutputLayout",
+    "emit_trailer_row": "OutputLayout",
+    "emit_concat_ws_line": "OutputLayout",
+    "default_execution_mode": "Feed",
+    "anchor_date_default": "ExtractParameters",
+    "window_years_default": "ExtractParameters",
+}
+
+_TRUE_TOKENS = ("1", "true", "yes", "y", "on")
+_FALSE_TOKENS = ("0", "false", "no", "n", "off")
+
+
+def _is_blank(value: Any) -> bool:
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
+def _coerce_flag(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(int(value))
+    token = str(value).strip().lower()
+    if token in _TRUE_TOKENS:
+        return True
+    if token in _FALSE_TOKENS:
+        return False
+    raise ValueError("expected 0/1 (or true/false), got {!r}".format(value))
+
+
+def _coerce_positive_int(value: Any) -> int:
+    if isinstance(value, bool):
+        raise ValueError("expected a positive integer, got {!r}".format(value))
+    try:
+        number = int(str(value).strip())
+    except (TypeError, ValueError):
+        raise ValueError("expected a positive integer, got {!r}".format(value))
+    if number <= 0:
+        raise ValueError("must be greater than zero, got {!r}".format(value))
+    return number
+
+
+def _coerce_date(value: Any):
+    import datetime
+
+    if isinstance(value, datetime.datetime):
+        return value.date()
+    if isinstance(value, datetime.date):
+        return value
+    try:
+        return datetime.date.fromisoformat(str(value).strip())
+    except ValueError:
+        raise ValueError("expected a YYYY-MM-DD date, got {!r}".format(value))
+
+
+def _coerce_choice(value: Any, choices, *, upper: bool = False) -> str:
+    token = str(value).strip()
+    token = token.upper() if upper else token.lower()
+    if token not in choices:
+        raise ValueError("must be one of {}, got {!r}".format("/".join(choices), value))
+    return token
+
+
+def _coerce_line_ending(value: Any) -> str:
+    return _coerce_choice(value, ("CRLF", "LF"), upper=True)
+
+
+def _coerce_execution_mode(value: Any) -> str:
+    return _coerce_choice(value, ("polars", "sql"))
+
+
+def _coerce_sentinel(value: Any) -> str:
+    return str(value)
+
+
+def _coerce_collision_action(value: Any) -> str:
+    return _coerce_choice(value, ("sanitize", "fail"))
+
+
+_FEED_SETTING_COERCERS = (
+    ("collision_action", _coerce_collision_action),
+    ("line_ending", _coerce_line_ending),
+    ("null_sentinel", _coerce_sentinel),
+    ("max_rows_per_file", _coerce_positive_int),
+    ("emit_header_row", _coerce_flag),
+    ("emit_trailer_row", _coerce_flag),
+    ("emit_concat_ws_line", _coerce_flag),
+    ("default_execution_mode", _coerce_execution_mode),
+    ("anchor_date_default", _coerce_date),
+    ("window_years_default", _coerce_positive_int),
+)
+
+
+def coerce_feed_settings(feed: Dict[str, Any]):
+    """Convert the optional meta.feed settings a workbook supplied.
+
+    Returns ``(settings, issues)``. ``settings`` holds only the keys the
+    workbook actually supplied a non-blank value for, already converted to
+    the types meta.feed's columns expect; ``issues`` holds one
+    ``(sheet, message)`` per unusable value.
+
+    Shared by validate() and upsert() so the two can never disagree about
+    what a given cell means - a value validate() accepted is exactly the
+    value upsert() writes.
+    """
+    settings: Dict[str, Any] = {}
+    issues = []
+    for column, coerce in _FEED_SETTING_COERCERS:
+        if column not in feed or _is_blank(feed.get(column)):
+            continue
+        try:
+            settings[column] = coerce(feed[column])
+        except ValueError as exc:
+            issues.append((_FEED_SETTING_SHEET[column], "{}: {}".format(column, exc)))
+    return settings, issues
 
 
 @dataclass
@@ -141,9 +300,12 @@ def load_workbook(path: str) -> WorkbookConfig:
         feed.setdefault("window_years_default", extract_params[0].get("window_years_default"))
     if output_layout:
         layout = output_layout[0]
-        feed.setdefault("emit_header_row", layout.get("emit_header_row"))
-        feed.setdefault("emit_trailer_row", layout.get("emit_trailer_row"))
-        feed.setdefault("emit_concat_ws_line", layout.get("emit_concat_ws_line"))
+        # Column order is always FieldMap.ordinal, never this sheet - but
+        # everything else about the physical file shape belongs here.
+        for column in ("emit_header_row", "emit_trailer_row", "emit_concat_ws_line",
+                        "line_ending", "null_sentinel", "max_rows_per_file"):
+            if column in layout:
+                feed.setdefault(column, layout.get(column))
 
     # KeyGeneration rows are additional FieldMap rows authored on a separate
     # sheet for clarity; merge them in, ordinal and all.
@@ -183,6 +345,15 @@ def validate(config: WorkbookConfig, *, check_lookup_tables_exist=None) -> Valid
     collision_char = config.feed.get("collision_char", " ")
     if delimiter == collision_char:
         report.add("Feed", "collision_char must not equal delimiter")
+
+    # The optional meta.feed settings (Feed's own collision_action and
+    # default_execution_mode, plus the OutputLayout and ExtractParameters
+    # sheets). These actually reach the database now, so an unusable value
+    # has to surface here, before any write, rather than as a raw
+    # CHECK-constraint violation partway through upsert().
+    _, feed_setting_issues = coerce_feed_settings(config.feed)
+    for sheet, message in feed_setting_issues:
+        report.add(sheet, message)
 
     dataset_names = {d.get("dataset_name") for d in config.datasets if d.get("dataset_name")}
     if len(dataset_names) != len([d for d in config.datasets if d.get("dataset_name")]):
@@ -355,26 +526,47 @@ def upsert(config: WorkbookConfig, conn, *, loaded_by: str) -> int:
         if existing:
             return int(existing[0])
 
+        # The always-written feed columns, then whichever optional settings
+        # the workbook actually supplied. The column list is built at runtime
+        # so that an omitted OutputLayout/ExtractParameters sheet means "keep
+        # the value already in the database" rather than overwriting it with
+        # NULL. Every name here comes from this module's own literals, never
+        # from workbook content, so the composed SQL stays the plain
+        # single-statement INSERT/UPDATE shape guardrails.py allows.
+        feed_settings, feed_setting_issues = coerce_feed_settings(config.feed)
+        if feed_setting_issues:
+            raise ValueError(
+                "Feed settings are unusable; validate() should have rejected this "
+                "workbook first: {}".format(
+                    "; ".join("{}: {}".format(sheet, message) for sheet, message in feed_setting_issues)
+                )
+            )
+        feed_columns: Dict[str, Any] = {
+            "source_server": config.feed.get("source_server"),
+            "source_database": config.feed.get("source_database"),
+            "delimiter": config.feed.get("delimiter", "|"),
+            "collision_action": "sanitize",
+            "collision_char": config.feed.get("collision_char", " "),
+            "output_root": config.feed.get("output_root"),
+        }
+        feed_columns.update(feed_settings)
+
         cursor.execute("SELECT feed_id FROM meta.feed WHERE feed_name = ?", feed_name)
         row = cursor.fetchone()
         if row:
             feed_id = int(row[0])
+            assignments = ", ".join("{}=?".format(name) for name in feed_columns)
             cursor.execute(
-                "UPDATE meta.feed SET source_server=?, source_database=?, delimiter=?, "
-                "collision_action=?, collision_char=?, output_root=?, updated_at=SYSUTCDATETIME() "
-                "WHERE feed_id=?",
-                config.feed.get("source_server"), config.feed.get("source_database"),
-                config.feed.get("delimiter", "|"), config.feed.get("collision_action", "sanitize"),
-                config.feed.get("collision_char", " "), config.feed.get("output_root"), feed_id,
+                "UPDATE meta.feed SET {}, updated_at=SYSUTCDATETIME() WHERE feed_id=?".format(assignments),
+                *feed_columns.values(), feed_id,
             )
         else:
+            insert_columns = ["feed_name"] + list(feed_columns)
+            cursor_sql = "INSERT INTO meta.feed ({}) VALUES ({})".format(
+                ", ".join(insert_columns), ", ".join("?" for _ in insert_columns)
+            )
             feed_id = conn_mod.execute_insert_return_identity(
-                cursor,
-                "INSERT INTO meta.feed (feed_name, source_server, source_database, delimiter, "
-                "collision_action, collision_char, output_root) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                feed_name, config.feed.get("source_server"), config.feed.get("source_database"),
-                config.feed.get("delimiter", "|"), config.feed.get("collision_action", "sanitize"),
-                config.feed.get("collision_char", " "), config.feed.get("output_root"),
+                cursor, cursor_sql, feed_name, *feed_columns.values()
             )
 
         dataset_ids: Dict[str, int] = {}

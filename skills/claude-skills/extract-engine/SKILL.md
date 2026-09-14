@@ -140,7 +140,11 @@ removed on purpose.
 4. **Checkpoint granularity is per-dataset, not per-file-part.** `--resume`
    skips a dataset only if `meta.run_detail` already shows it `completed`; a
    dataset that was `running` or `failed` when the process died is
-   reprocessed **from scratch**, including its source query. See
+   reprocessed **from scratch**, including its source query. A resumed run
+   takes its `anchor_date`, `window_years` and `execution_mode` from the
+   original `meta.run_log` row, never from today's defaults, so every dataset
+   in one run shares one window — an explicit `--anchor-date`/`--window-years`
+   /`--mode` that contradicts the record is refused. See
    `references/checkpoint-and-resume.md`.
 5. **Schema is always pinned, never inferred.** Both `pl.read_database` calls
    pass `schema_overrides` derived from `meta.field_map.data_type`
@@ -200,7 +204,7 @@ Neither execution path ever reads the workbook directly — only
 | `FieldMap` (required) | `meta.field_map` |
 | `KeyGeneration` (optional) | folded into `FieldMap` rows before validation — a separate authoring sheet for `rule_name = row_sequence`, merged by `load_workbook` |
 | `ExtractParameters` (optional) | `feed.anchor_date_default` / `feed.window_years_default` |
-| `OutputLayout` (optional) | `feed.emit_header_row` / `emit_trailer_row` / `emit_concat_ws_line` only — column order is always `FieldMap.ordinal` |
+| `OutputLayout` (optional) | `feed.emit_header_row` / `emit_trailer_row` / `emit_concat_ws_line` / `line_ending` / `null_sentinel` / `max_rows_per_file` — column order is not here, it is always `FieldMap.ordinal` |
 
 `validate()` runs entirely offline (structural checks against the workbook
 and the Python rule registry) except one check: whether a `Lookups` row's
@@ -409,6 +413,25 @@ gated behind live SQL Server and skipped otherwise:
 
 ## Related material in this repository
 
+- `RUNBOOK.md` — the developer-facing execution runbook in this same
+  folder: setup, the Windows-auth/trusted-connection details, every
+  mapping-workbook sheet and column, the generated source queries, the
+  output file format, and batch/large-dataset operation. Its "defects found
+  and fixed" section records six bugs that were reproduced live and then
+  fixed, with the live evidence for each: the `--resume` `uq_run_dataset`
+  unique-key violation, `nvarchar(n)`/`varchar(MAX)` being rejected by the
+  config loader's validator, `nchar(n)` validating and then failing at
+  read-plan time, the `ExtractParameters`/`OutputLayout`/
+  `default_execution_mode` values the loader silently dropped, `--resume`
+  re-deriving the extraction window from today's defaults instead of the
+  original run's, and `--resume` without `--run-id` silently starting a
+  whole new run.
+- `DEVELOPER.md` — a human setup/run/troubleshoot guide in this same folder,
+  with a real, verified end-to-end transcript (offline tests, a live LocalDB
+  run on both backends with matching checksums, and the two operational
+  gotchas that actually occurred while producing it: the sample workbook's
+  hardcoded `D:\Extracts` output path, and stale `running` rows blocking the
+  concurrent-run guard after a crash).
 - `docs/extract-engine-mvp-prompt-v2-polars.md` — the design prompt this
   skill was built from. Read the "What actually exists here" section above
   before treating anything in it as implemented.

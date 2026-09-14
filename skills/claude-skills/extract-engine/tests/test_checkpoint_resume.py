@@ -142,3 +142,96 @@ def test_stage_dataset_keys_with_no_values_writes_nothing():
     conn = FakeConnection()
     checkpoint.stage_dataset_keys(conn, run_id=1, dataset_id=2, key_values=[])
     assert conn.writes == []
+
+
+# ---------------------------------------------------------------------------
+# Resuming a run that died INSIDE a dataset. meta.run_detail is UNIQUE on
+# (run_id, dataset_id) and --resume reuses the run_id, so mark_dataset_running
+# has to tolerate the row a previous attempt already left behind.
+# ---------------------------------------------------------------------------
+
+
+def test_mark_dataset_running_inserts_when_no_prior_row_exists():
+    conn = FakeConnection()  # no scripted SELECT -> no existing row
+    checkpoint.mark_dataset_running(conn, run_id=1, dataset_id=5)
+    assert len(conn.writes) == 1
+    sql, params = conn.writes[0]
+    assert "INSERT INTO META.RUN_DETAIL" in sql.upper()
+    assert params == (1, 5)
+
+
+def test_mark_dataset_running_updates_the_row_a_failed_attempt_left():
+    """The regression: a plain INSERT here raised 'Violation of UNIQUE KEY
+    constraint uq_run_dataset' on every resume of a run that died inside a
+    dataset - precisely the case --resume exists for."""
+    conn = FakeConnection({r"SELECT run_detail_id": (["run_detail_id"], [(77,)])})
+    checkpoint.mark_dataset_running(conn, run_id=4, dataset_id=1)
+    assert len(conn.writes) == 1
+    sql, params = conn.writes[0]
+    assert "UPDATE META.RUN_DETAIL" in sql.upper()
+    assert "INSERT" not in sql.upper()
+    assert params == (77,)
+
+
+def test_mark_dataset_running_clears_the_previous_attempts_results():
+    """A reprocessed dataset's old row_count/part_count/checksum describe files
+    that are about to be rewritten, so they must not survive the retry."""
+    conn = FakeConnection({r"SELECT run_detail_id": (["run_detail_id"], [(77,)])})
+    checkpoint.mark_dataset_running(conn, run_id=4, dataset_id=1)
+    sql = conn.writes[0][0]
+    for cleared in ("completed_at = NULL", "row_count = NULL", "part_count = NULL", "checksum = NULL"):
+        assert cleared in sql, cleared
+    assert "status = 'running'" in sql
+
+
+# ---------------------------------------------------------------------------
+# get_run: a resumed run must extract the window the ORIGINAL run recorded.
+# ---------------------------------------------------------------------------
+
+
+def test_get_run_returns_the_recorded_parameters():
+    import datetime
+
+    fields = ["run_id", "feed_id", "anchor_date", "window_years", "execution_mode", "status"]
+    conn = FakeConnection({r"FROM meta\.run_log WHERE run_id": (fields, [
+        (4, 1, datetime.date(2026, 6, 30), 3, "sql", "failed"),
+    ])})
+    header = checkpoint.get_run(conn, run_id=4)
+    assert header.anchor_date == datetime.date(2026, 6, 30)
+    assert header.window_years == 3
+    assert header.execution_mode == "sql"
+    assert header.feed_id == 1
+    assert header.status == "failed"
+
+
+def test_get_run_returns_none_for_an_unknown_run_id():
+    conn = FakeConnection()
+    assert checkpoint.get_run(conn, run_id=999) is None
+
+
+# ---------------------------------------------------------------------------
+# Key staging has to survive a re-run of the same primary dataset: the keys
+# are committed in one transaction and mark_dataset_complete in another, so a
+# crash between them leaves keys staged for a dataset that is still 'running'.
+# ---------------------------------------------------------------------------
+
+
+def test_stage_dataset_keys_skips_keys_already_staged():
+    conn = FakeConnection({r"SELECT key_value": (["key_value"], [("100",), ("200",)])})
+    checkpoint.stage_dataset_keys(conn, run_id=4, dataset_id=1, key_values=[100, 200, 300])
+    assert len(conn.writes) == 1
+    assert conn.writes[0][1] == (4, 1, "300")
+
+
+def test_stage_dataset_keys_writes_nothing_when_everything_is_already_staged():
+    conn = FakeConnection({r"SELECT key_value": (["key_value"], [("100",), ("200",)])})
+    checkpoint.stage_dataset_keys(conn, run_id=4, dataset_id=1, key_values=[100, 200])
+    assert conn.writes == []
+
+
+def test_stage_dataset_keys_dedupes_values_sharing_one_string_form():
+    """key_value is VARCHAR, so the int 1 and the str '1' are one row, not two
+    - staging both would violate the primary key on its own."""
+    conn = FakeConnection()
+    checkpoint.stage_dataset_keys(conn, run_id=4, dataset_id=1, key_values=[1, "1", 2])
+    assert [params[2] for _, params in conn.writes] == ["1", "2"]

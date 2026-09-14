@@ -60,11 +60,17 @@ def data_type_to_polars(data_type: str):
         return pl.Date
     if token in ("datetime", "datetime2"):
         return pl.Datetime
-    decimal_match = re.match(r"decimal\((\d+)\s*,\s*(\d+)\)", token)
+    decimal_match = re.match(r"^decimal\(\s*(\d+)\s*,\s*(\d+)\s*\)$", token)
     if decimal_match:
         precision, scale = decimal_match.groups()
         return pl.Decimal(int(precision), int(scale))
-    if token.startswith("varchar") or token.startswith("nvarchar") or token.startswith("char"):
+    # n?(var)?char covers char/nchar/varchar/nvarchar, with or without a
+    # length and with (n) or (MAX). nchar used to be the one token
+    # config_loader's validator accepted that this function then rejected -
+    # raising ValueError when the read plan was built, i.e. AFTER the config
+    # write had already committed, so the feed was unloadable until someone
+    # edited the workbook.
+    if re.match(r"^n?(?:var)?char\b", token):
         return pl.Utf8
     raise ValueError("Unrecognized data_type token: {!r}".format(data_type))
 

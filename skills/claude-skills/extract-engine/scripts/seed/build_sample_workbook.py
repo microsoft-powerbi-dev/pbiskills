@@ -49,10 +49,17 @@ def build() -> Path:
         [{"anchor_date_default": "", "window_years_default": 2}],
     )
 
+    # line_ending and max_rows_per_file are read from this sheet too, and every
+    # column here is genuinely persisted to meta.feed now (they used to be
+    # parsed and then dropped). The values match seed_schema.sql's own
+    # defaults, so the sample feed behaves exactly as before - they are spelled
+    # out to show an author where the knobs actually live.
     _write_sheet(
         wb, "OutputLayout",
-        ["emit_header_row", "emit_trailer_row", "emit_concat_ws_line"],
-        [{"emit_header_row": 0, "emit_trailer_row": 1, "emit_concat_ws_line": 0}],
+        ["emit_header_row", "emit_trailer_row", "emit_concat_ws_line",
+         "line_ending", "max_rows_per_file"],
+        [{"emit_header_row": 0, "emit_trailer_row": 1, "emit_concat_ws_line": 0,
+          "line_ending": "CRLF", "max_rows_per_file": 1000000}],
     )
 
     _write_sheet(

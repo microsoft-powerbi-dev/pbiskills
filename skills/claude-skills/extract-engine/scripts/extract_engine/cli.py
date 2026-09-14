@@ -226,12 +226,51 @@ def run_cmd(feed_name, mode, anchor_date, window_years, resume, run_id):
     )
     effective_window = window_years if window_years is not None else feed.window_years_default
 
+    # --resume without --run-id used to fall through and silently start a
+    # brand-new run, re-extracting everything the user was trying to skip.
+    if resume and not run_id:
+        raise click.ClickException(
+            "--resume needs --run-id. Pass the run_id of the run to continue "
+            "(see meta.run_log), or drop --resume to start a fresh run."
+        )
+
     with conn_mod.write_connection() as w_conn:
         if checkpoint.is_concurrent_run_active(w_conn, feed.feed_id):
             raise click.ClickException(
                 "A run is already in progress for feed {!r}. Refusing to start a second one.".format(feed_name)
             )
-        if resume and run_id:
+        if resume:
+            prior = checkpoint.get_run(w_conn, run_id)
+            if prior is None:
+                raise click.ClickException("No run with run_id={} exists.".format(run_id))
+            if prior.feed_id != feed.feed_id:
+                raise click.ClickException(
+                    "Run {} belongs to another feed, not {!r}. Resuming it under this feed "
+                    "would extract one feed's datasets against another's run.".format(run_id, feed_name)
+                )
+            # A resumed run continues the ORIGINAL extraction, so its window
+            # and backend come from meta.run_log rather than being re-derived
+            # from today's defaults - anchor_date defaults to today, so a run
+            # started yesterday and resumed today would otherwise give its
+            # completed and its remaining datasets two different windows.
+            # An explicit flag that contradicts the record is an error, not
+            # something to silently honour or silently ignore.
+            for flag, supplied, recorded in (
+                ("--anchor-date", datetime.date.fromisoformat(anchor_date) if anchor_date else None,
+                 prior.anchor_date),
+                ("--window-years", window_years, prior.window_years),
+                ("--mode", mode, prior.execution_mode),
+            ):
+                if supplied is not None and supplied != recorded:
+                    raise click.ClickException(
+                        "{} {} conflicts with run {}, which was started with {}. Omit the flag to "
+                        "continue that run, or start a fresh run instead.".format(
+                            flag, supplied, run_id, recorded
+                        )
+                    )
+            effective_anchor = prior.anchor_date
+            effective_window = prior.window_years
+            effective_mode = prior.execution_mode
             active_run_id = run_id
         else:
             active_run_id = checkpoint.start_run(

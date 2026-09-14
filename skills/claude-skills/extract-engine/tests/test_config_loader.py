@@ -238,3 +238,167 @@ def test_upsert_never_sends_a_bare_delete():
     for sql, _params in conn.writes:
         verdict = guardrails.classify_write_statement(sql)
         assert verdict.allowed, "{!r} should be on the write allow-list: {}".format(sql, verdict.reason)
+
+
+# ---------------------------------------------------------------------------
+# data_type tokens: the validator and the Polars dtype mapping must agree.
+# Two live defects sat here - the validator rejected every nvarchar(n) and
+# every MAX length, and accepted nchar(n) which the mapping then rejected at
+# read-plan time, after the config write had already committed.
+# ---------------------------------------------------------------------------
+
+_MAPPABLE_TOKENS = (
+    "int", "bigint", "bit", "date", "datetime", "datetime2",
+    "varchar(20)", "varchar(MAX)", "nvarchar(100)", "nvarchar(MAX)",
+    "char(5)", "nchar(5)", "decimal(18,2)", "decimal(18, 2)",
+)
+
+
+def test_every_accepted_data_type_token_is_also_mappable_to_a_polars_dtype():
+    """The lockstep property. A token the validator admits but
+    data_type_to_polars cannot map is a config write that commits and then
+    blows up when the read plan is built."""
+    from extract_engine.query_builder import data_type_to_polars
+
+    for token in _MAPPABLE_TOKENS:
+        assert cl._DATA_TYPE_PATTERN.match(token), "validator rejects {!r}".format(token)
+        assert data_type_to_polars(token) is not None, "no dtype for {!r}".format(token)
+
+
+def test_nvarchar_and_max_lengths_are_accepted():
+    for token in ("nvarchar(100)", "nvarchar(MAX)", "varchar(MAX)", "nchar(5)"):
+        config = _valid_config()
+        config.field_maps[0]["data_type"] = token
+        report = cl.validate(config)
+        assert report.ok, "{} rejected: {}".format(token, report)
+
+
+def test_still_rejects_a_token_with_no_dtype_mapping():
+    for token in ("float", "geography", "varchar", "nvarchar(50", "MAX)"):
+        config = _valid_config()
+        config.field_maps[0]["data_type"] = token
+        assert not cl.validate(config).ok, "{} should be rejected".format(token)
+
+
+# ---------------------------------------------------------------------------
+# The optional meta.feed settings. These were parsed, validated, then dropped
+# on the floor by upsert(), so every feed silently ran on the DDL defaults.
+# ---------------------------------------------------------------------------
+
+
+def _upsert_feed_sql(config, *, existing_feed_id=None):
+    """Run upsert far enough to capture the meta.feed INSERT or UPDATE."""
+    script = {r"SCOPE_IDENTITY": (["id"], [(7,)])}
+    if existing_feed_id is not None:
+        script[r"SELECT feed_id FROM meta\.feed"] = (["feed_id"], [(existing_feed_id,)])
+    conn = FakeConnection(script)
+    cl.upsert(config, conn, loaded_by="DOMAIN\\svc")
+    for sql, params in conn.writes:
+        if "meta.feed " in sql or "meta.feed(" in sql or sql.strip().upper().startswith(
+            ("INSERT INTO META.FEED ", "UPDATE META.FEED")
+        ):
+            return sql, params
+    raise AssertionError("no meta.feed write captured: {}".format(conn.write_texts()))
+
+
+def test_upsert_persists_the_optional_feed_settings_on_insert():
+    config = _valid_config()
+    config.feed.update({
+        "line_ending": "LF", "null_sentinel": "NULL", "max_rows_per_file": 250000,
+        "emit_header_row": 1, "emit_trailer_row": 0, "emit_concat_ws_line": 1,
+        "default_execution_mode": "sql", "anchor_date_default": "2026-06-30",
+        "window_years_default": 5, "collision_action": "fail",
+    })
+    assert cl.validate(config).ok, str(cl.validate(config))
+    sql, params = _upsert_feed_sql(config)
+    import datetime
+
+    for column in ("line_ending", "null_sentinel", "max_rows_per_file", "emit_header_row",
+                    "emit_trailer_row", "emit_concat_ws_line", "default_execution_mode",
+                    "anchor_date_default", "window_years_default", "collision_action"):
+        assert column in sql, "{} missing from {}".format(column, sql)
+    assert "LF" in params and "sql" in params and "fail" in params
+    assert 250000 in params and 5 in params
+    assert datetime.date(2026, 6, 30) in params
+    assert sql.count("?") == len(params)
+
+
+def test_upsert_persists_the_optional_feed_settings_on_reload_of_an_existing_feed():
+    config = _valid_config()
+    config.feed["default_execution_mode"] = "sql"
+    config.feed["max_rows_per_file"] = 99
+    sql, params = _upsert_feed_sql(config, existing_feed_id=3)
+    assert sql.strip().upper().startswith("UPDATE META.FEED SET")
+    assert "default_execution_mode=?" in sql and "max_rows_per_file=?" in sql
+    assert "sql" in params and 99 in params
+    assert sql.count("?") == len(params)
+
+
+def test_an_omitted_optional_setting_is_not_written_at_all():
+    """A blank or absent cell must mean 'keep what the database has', never
+    'overwrite it with NULL' - otherwise dropping an optional sheet silently
+    resets settings an operator configured on purpose."""
+    config = _valid_config()
+    config.feed["anchor_date_default"] = ""        # blank cell, as openpyxl reads it
+    sql, _ = _upsert_feed_sql(config)
+    for absent in ("line_ending", "max_rows_per_file", "emit_header_row",
+                    "default_execution_mode", "anchor_date_default", "window_years_default"):
+        assert absent not in sql, "{} should not be written: {}".format(absent, sql)
+
+
+def test_unusable_feed_settings_are_validation_issues_not_constraint_violations():
+    cases = {
+        "emit_header_row": "maybe",
+        "default_execution_mode": "duckdb",
+        "line_ending": "CR",
+        "max_rows_per_file": 0,
+        "window_years_default": -1,
+        "anchor_date_default": "30/06/2026",
+        "collision_action": "ignore",
+    }
+    for column, bad_value in cases.items():
+        config = _valid_config()
+        config.feed[column] = bad_value
+        report = cl.validate(config)
+        assert not report.ok, "{}={!r} should be rejected".format(column, bad_value)
+        assert column in str(report), str(report)
+
+
+def test_feed_setting_issues_are_reported_against_their_authoring_sheet():
+    config = _valid_config()
+    config.feed["emit_header_row"] = "maybe"
+    config.feed["window_years_default"] = "soon"
+    messages = str(cl.validate(config))
+    assert "OutputLayout" in messages
+    assert "ExtractParameters" in messages
+
+
+def test_feed_settings_are_normalised_to_what_the_db_check_constraints_accept():
+    settings, issues = cl.coerce_feed_settings({
+        "line_ending": "lf", "default_execution_mode": "SQL", "collision_action": "Fail",
+        "emit_trailer_row": "yes", "max_rows_per_file": "1000",
+    })
+    assert issues == []
+    assert settings["line_ending"] == "LF"
+    assert settings["default_execution_mode"] == "sql"
+    assert settings["collision_action"] == "fail"
+    assert settings["emit_trailer_row"] is True
+    assert settings["max_rows_per_file"] == 1000
+
+
+def test_the_sample_workbook_supplies_the_output_layout_settings():
+    """load_workbook must fold OutputLayout's file-format columns into the feed
+    dict, or the sheet is decoration again."""
+    workbook = Path(__file__).resolve().parent.parent / "examples" / "sample-workbook.xlsx"
+    if not workbook.exists():
+        return
+    config = cl.load_workbook(str(workbook))
+    settings, issues = cl.coerce_feed_settings(config.feed)
+    assert issues == []
+    assert settings["line_ending"] == "CRLF"
+    assert settings["max_rows_per_file"] == 1000000
+    assert settings["default_execution_mode"] == "polars"
+    assert settings["window_years_default"] == 2
+    assert settings["emit_trailer_row"] is True
+    # anchor_date_default is deliberately blank in the sample workbook
+    assert "anchor_date_default" not in settings

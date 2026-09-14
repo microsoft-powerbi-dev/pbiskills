@@ -55,6 +55,57 @@ def start_run(
         cursor.close()
 
 
+@dataclass(frozen=True)
+class RunHeader:
+    """The parameters a run was started with, as recorded in meta.run_log."""
+
+    run_id: int
+    feed_id: int
+    anchor_date: datetime.date
+    window_years: int
+    execution_mode: str
+    status: str
+
+
+def get_run(conn, run_id: int) -> Optional[RunHeader]:
+    """Read back the parameters a run was started with.
+
+    ``--resume`` has to extract the SAME window the original run did.
+    Re-deriving anchor_date/window_years from the CLI defaults at resume time
+    instead would silently mix windows within one run: anchor_date defaults to
+    *today*, so a run started yesterday and resumed today would give its
+    already-completed datasets yesterday's window and its remaining datasets
+    today's - a file set that looks complete and is not self-consistent.
+    meta.run_log records these three values precisely so they can be
+    recovered, and this is what recovers them.
+    """
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT run_id, feed_id, anchor_date, window_years, execution_mode, status "
+            "FROM meta.run_log WHERE run_id = ?",
+            run_id,
+        )
+        row = cursor.fetchone()
+    finally:
+        cursor.close()
+    if row is None:
+        return None
+    anchor = row[2]
+    if isinstance(anchor, datetime.datetime):
+        anchor = anchor.date()
+    elif isinstance(anchor, str):
+        anchor = datetime.date.fromisoformat(anchor)
+    return RunHeader(
+        run_id=int(row[0]),
+        feed_id=int(row[1]),
+        anchor_date=anchor,
+        window_years=int(row[3]),
+        execution_mode=row[4],
+        status=row[5],
+    )
+
+
 def is_concurrent_run_active(conn, feed_id: int) -> bool:
     """Advisory check: refuse a second concurrent run against the same feed.
 
@@ -85,13 +136,48 @@ def complete_run(conn, run_id: int, *, duration_ms: int, peak_rss_bytes: int, st
 
 
 def mark_dataset_running(conn, run_id: int, dataset_id: int) -> None:
+    """Mark a dataset in-flight, whether or not a prior attempt left a row.
+
+    Idempotent by necessity, not by preference. meta.run_detail carries
+    UNIQUE (run_id, dataset_id) and ``--resume`` reuses the original run_id,
+    so any dataset that reached 'running' or 'failed' before the process died
+    ALREADY has a row - which is exactly the set of datasets --resume exists
+    to retry. A plain INSERT here therefore failed every resume of a run that
+    died inside a dataset, with "Violation of UNIQUE KEY constraint
+    'uq_run_dataset'" (reproduced live against a run whose first dataset was
+    left 'failed').
+
+    Reprocessing a dataset also invalidates the previous attempt's results, so
+    the update path clears row_count/part_count/checksum/completed_at rather
+    than leaving a stale checksum attached to files that are about to be
+    rewritten - a resumed dataset that failed again would otherwise still
+    advertise the old run's checksum.
+
+    Uses the same select-then-branch upsert shape as
+    ``config_loader.upsert``'s dataset handling rather than MERGE or a
+    rowcount check, so both paths stay single, parameterized statements on
+    the guardrail's allow-list and stay testable against a fake cursor.
+    """
     cursor = conn.cursor()
     try:
         cursor.execute(
-            "INSERT INTO meta.run_detail (run_id, dataset_id, status, started_at) "
-            "VALUES (?, ?, 'running', SYSUTCDATETIME())",
+            "SELECT run_detail_id FROM meta.run_detail WHERE run_id = ? AND dataset_id = ?",
             run_id, dataset_id,
         )
+        existing = cursor.fetchone()
+        if existing:
+            cursor.execute(
+                "UPDATE meta.run_detail SET status = 'running', started_at = SYSUTCDATETIME(), "
+                "completed_at = NULL, row_count = NULL, part_count = NULL, checksum = NULL "
+                "WHERE run_detail_id = ?",
+                int(existing[0]),
+            )
+        else:
+            cursor.execute(
+                "INSERT INTO meta.run_detail (run_id, dataset_id, status, started_at) "
+                "VALUES (?, ?, 'running', SYSUTCDATETIME())",
+                run_id, dataset_id,
+            )
     finally:
         cursor.close()
 
@@ -168,14 +254,36 @@ def stage_dataset_keys(conn, run_id: int, dataset_id: int, key_values: List) -> 
         return
     cursor = conn.cursor()
     try:
+        # Skip anything already staged for this (run_id, dataset_id).
+        # meta.run_dataset_key's primary key is (run_id, dataset_id,
+        # key_value), and --resume reprocesses a dataset that did not reach
+        # 'completed' - including one that crashed in the window between
+        # staging its keys (one committed transaction) and being marked
+        # complete (a separate one). Re-staging blind would then abort the
+        # resumed run on a primary-key violation.
+        cursor.execute(
+            "SELECT key_value FROM meta.run_dataset_key WHERE run_id = ? AND dataset_id = ?",
+            run_id, dataset_id,
+        )
+        already_staged = {row[0] for row in cursor.fetchall()}
+        # dict.fromkeys dedupes while preserving order. The accumulator hands
+        # over distinct *typed* values, but key_value is VARCHAR and two
+        # distinct values can share one string form (1 and "1"), which would
+        # itself violate the primary key.
+        pending = [
+            text
+            for text in dict.fromkeys(str(value) for value in key_values)
+            if text not in already_staged
+        ]
+        if not pending:
+            return
         try:
             cursor.fast_executemany = True
         except AttributeError:
             pass  # a fake/test cursor won't have this; real pyodbc does
-        params = [(run_id, dataset_id, str(value)) for value in key_values]
         cursor.executemany(
             "INSERT INTO meta.run_dataset_key (run_id, dataset_id, key_value) VALUES (?, ?, ?)",
-            params,
+            [(run_id, dataset_id, text) for text in pending],
         )
     finally:
         cursor.close()

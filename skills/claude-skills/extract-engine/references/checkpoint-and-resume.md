@@ -37,7 +37,9 @@ to know which datasets already reached `completed`.
 2. Fresh run: `checkpoint.start_run` inserts a new `run_log` row with
    `status='running'` and returns its `run_id`.
    Resumed run (`--resume --run-id N`): no new `run_log` row; `N` is reused
-   as `active_run_id` directly.
+   as `active_run_id` directly. `--resume` requires `--run-id` (without it,
+   `run` used to fall through and silently start a whole new run), `N` must
+   exist, and it must belong to the `--feed` given.
 3. `checkpoint.get_run_detail_statuses(conn, run_id)` is read only when
    `--resume` is set — otherwise every dataset in the feed is scheduled with
    an empty status map.
@@ -52,8 +54,15 @@ to know which datasets already reached `completed`.
      output part files are rewritten from the first row. There is no partial-
      file or partial-batch resume within a dataset.
 5. For each dataset actually processed, in `run_ordinal` order:
-   `mark_dataset_running` inserts a `run_detail` row (`status='running'`)
-   before any read happens; on success, `mark_dataset_complete` updates that
+   `mark_dataset_running` upserts a `run_detail` row (`status='running'`)
+   before any read happens — inserting when the dataset has never been
+   attempted in this run, and otherwise updating the row a previous attempt
+   left behind while clearing its stale
+   `row_count`/`part_count`/`checksum`/`completed_at`. It has to be an upsert
+   rather than an insert: `run_detail` is unique on `(run_id, dataset_id)`
+   and `--resume` reuses the `run_id`, so a plain insert failed with
+   `uq_run_dataset` on every resume of a run that died inside a dataset.
+   On success, `mark_dataset_complete` updates that
    row with `row_count`/`part_count`/`checksum`; on any exception,
    `mark_dataset_failed` updates it to `status='failed'` and the exception is
    re-raised (the run itself is left in `status='running'` in `run_log` —
@@ -85,18 +94,20 @@ to know which datasets already reached `completed`.
 - It does not re-validate the feed's `meta.*` configuration against the
   workbook again; it trusts the `feed_config_version_id` the *original* run
   recorded.
-- It does not detect a configuration change made between the failed attempt
-  and the resume — `run --resume` reuses whatever `anchor_date`/
-  `window_years`/`execution_mode` the original `start_run` call recorded
-  implicitly by not re-deriving them; a resumed run re-enters at
-  `checkpoint.datasets_to_process` with the *same* `run_id`, so it is
-  querying the same `feed_config_version_id` and the same effective
-  anchor/window the original attempt used (those aren't re-read from
-  `run_log` on resume in `cli.run_cmd` today — `effective_mode`/
-  `effective_anchor`/`effective_window` are recomputed from the current
-  `--mode`/`--anchor-date`/`--window-years` flags or feed defaults each
-  invocation, so passing different flags on a `--resume` invocation than the
-  original run used will not raise an error, but will run any newly-started
-  dataset under the new parameters rather than the original ones. Pass the
-  same flags on both invocations if reproducibility across the interruption
-  matters).
+- It does not detect a `meta.*` configuration change made between the failed
+  attempt and the resume: it trusts the `feed_config_version_id` the original
+  run recorded, but reads the feed's *current* output settings
+  (`delimiter`, `line_ending`, `max_rows_per_file`, …) at run time. Reloading
+  the workbook between an attempt and its resume can therefore produce one
+  run whose parts were written under two different output formats.
+- It does **not**, however, let the extraction *window* drift.
+  `checkpoint.get_run(conn, run_id)` reads `anchor_date`, `window_years` and
+  `execution_mode` back from `run_log`, and the resume path uses those rather
+  than re-deriving them from the current flags or feed defaults. This
+  matters because `anchor_date` defaults to *today*: an earlier version
+  recomputed it on every invocation, so a run started yesterday and resumed
+  today gave its completed datasets yesterday's window and its remaining
+  datasets today's — a file set that looks complete and is not
+  self-consistent. An explicit `--mode`/`--anchor-date`/`--window-years` that
+  contradicts the recorded run is now refused with a message naming both
+  values, rather than silently applied to the newly-started datasets.
