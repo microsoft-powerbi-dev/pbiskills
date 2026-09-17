@@ -1,4 +1,4 @@
-# SkillsMCP — Agent Skills and MCP Server Library
+# SkillsMCP: Agent Skills and MCP Server Library
 
 **A reusable library of Agent Skills, MCP servers, and vendor-neutral playbooks
 for Power BI, SSRS, SQL Server, and Python data-engineering work.**
@@ -107,7 +107,7 @@ one you can navigate all of them:
 
 The four vendored skills form a closed loop: planning routes to design, design
 hands off to authoring, management transports the result. They need external
-tooling (Node.js CLIs, `az` CLI) — see
+tooling (Node.js CLIs, `az` CLI). See
 [skills/vendor/microsoft-fabric/README.md](skills/vendor/microsoft-fabric/README.md).
 
 ### 3.2 SQL Server and data engineering
@@ -115,15 +115,15 @@ tooling (Node.js CLIs, `az` CLI) — see
 | Skill | What it does | Entry point | Devin-ready |
 | --- | --- | --- | --- |
 | **sql-server-schema** | The one piece that reaches a live database. Connects to on-premises SQL Server with Windows Integrated Auth over pyodbc, reads schema from `sys.*` catalog views, classifies facts and dimensions, builds a declared-plus-inferred join graph, traces an RDL dataset back to its source tables, and emits a portable digest plus a generated per-database skill pack. **Read-only by construction**: no write tool, no flag that adds one. | [SKILL.md](skills/claude-skills/sql-server-schema/SKILL.md) · [scripts/cli.py](skills/claude-skills/sql-server-schema/scripts/cli.py) · [MCP server](skills/claude-skills/sql-server-schema/scripts/sqlserver_schema_mcp.py) | [KB entry](skills/ide-references/devin/sql-server-schema.knowledge.md) |
-| **extract-engine** | A metadata-driven SQL Server extract engine: reads feeds, datasets and field mappings from `meta.*` tables (authored in Excel) and produces pipe-delimited flat files via two interchangeable backends — in-process Polars, or a generated SQL Server view — required to produce byte-identical output. Includes checkpoint/resume, a write-statement allow-list, and a rule catalog that renders each transform as both a Polars expression and a T-SQL fragment. | [SKILL.md](skills/claude-skills/extract-engine/SKILL.md) · [RUNBOOK.md](skills/claude-skills/extract-engine/RUNBOOK.md) · [DEVELOPER.md](skills/claude-skills/extract-engine/DEVELOPER.md) | No KB entry yet |
-| **mapping-driven-loader-pipeline** | Turns a mapping spreadsheet into a working extract pipeline: reads the workbook, writes a reviewable transformation-mapper Markdown artifact, then generates generator-style Python (one directory per output file) that extracts from SQL Server, applies the mapped transforms, writes a pipe-delimited flat file, and splits output by record count and/or byte size. Reuses `extract-engine` patterns rather than inventing new ones. | [SKILL.md](skills/claude-skills/mapping-driven-loader-pipeline/SKILL.md) · [DEVIN-USAGE.md](skills/claude-skills/mapping-driven-loader-pipeline/DEVIN-USAGE.md) | Yes — [stub](.agents/skills/mapping-driven-loader-pipeline/SKILL.md) + [KB](skills/ide-references/devin/mapping-driven-loader-pipeline.knowledge.md) |
+| **extract-engine** | A metadata-driven SQL Server extract engine: reads feeds, datasets and field mappings from `meta.*` tables (authored in Excel) and produces pipe-delimited flat files via two interchangeable backends (in-process Polars, or a generated SQL Server view) required to produce byte-identical output. Includes checkpoint/resume, a write-statement allow-list, and a rule catalog that renders each transform as both a Polars expression and a T-SQL fragment. | [SKILL.md](skills/claude-skills/extract-engine/SKILL.md) · [RUNBOOK.md](skills/claude-skills/extract-engine/RUNBOOK.md) · [DEVELOPER.md](skills/claude-skills/extract-engine/DEVELOPER.md) | No KB entry yet |
+| **mapping-driven-loader-pipeline** | Turns a mapping spreadsheet into a working extract pipeline: reads the workbook, writes a reviewable transformation-mapper Markdown artifact, then generates generator-style Python (one directory per output file) that extracts from SQL Server, applies the mapped transforms, writes a pipe-delimited flat file, and splits output by record count and/or byte size. Reuses `extract-engine` patterns rather than inventing new ones. | [SKILL.md](skills/claude-skills/mapping-driven-loader-pipeline/SKILL.md) · [DEVIN-USAGE.md](skills/claude-skills/mapping-driven-loader-pipeline/DEVIN-USAGE.md) | Yes: [stub](.agents/skills/mapping-driven-loader-pipeline/SKILL.md) + [KB](skills/ide-references/devin/mapping-driven-loader-pipeline.knowledge.md) |
 
 ### 3.3 API, Python, and general engineering
 
 | Skill | What it does | Entry point | Devin-ready |
 | --- | --- | --- | --- |
-| **api-mongodb-mapping** | Documents an API's fields against a MongoDB target field by field, producing **one reviewable mapping document and nothing else** — no code. Handles internal APIs (scanned from repo routes and models, or a committed OpenAPI file) and external ones (spec, Postman export, or sample payloads). Reads the Mongo side from a `$jsonSchema` validator, schema-defining code (Mongoose, Beanie, Spring Data, C# driver), or inferred samples with stated confidence. Never invents a field, never silently resolves a mismatch. | [SKILL.md](skills/claude-skills/api-mongodb-mapping/SKILL.md) · [DEVIN-USAGE.md](skills/claude-skills/api-mongodb-mapping/DEVIN-USAGE.md) | Yes — [stub](.agents/skills/api-mongodb-mapping/SKILL.md) + [KB](skills/ide-references/devin/api-mongodb-mapping.knowledge.md) |
-| **repo-architecture-blueprint** | Analyzes any repository and produces a standing `<Repo>_Architecture_Blueprint.md`: auto-detected stack and architectural pattern, components, layers, cross-cutting concerns, extension points, ADRs, and **mandatory** Mermaid architecture and data-flow diagrams. Stack-agnostic and repo-agnostic, so it runs unmodified against the next repository. | [SKILL.md](skills/claude-skills/repo-architecture-blueprint/SKILL.md) · [DEVIN-USAGE.md](skills/claude-skills/repo-architecture-blueprint/DEVIN-USAGE.md) · [example output](SkillsMCP_Architecture_Blueprint.md) | Yes — [stub](.agents/skills/repo-architecture-blueprint/SKILL.md) + [KB](skills/ide-references/devin/repo-architecture-blueprint.knowledge.md) |
+| **api-mongodb-mapping** | Documents an API's fields against a MongoDB target field by field, producing **one reviewable mapping document and nothing else**, no code. Handles internal APIs (scanned from repo routes and models, or a committed OpenAPI file) and external ones (spec, Postman export, or sample payloads). Reads the Mongo side from a `$jsonSchema` validator, schema-defining code (Mongoose, Beanie, Spring Data, C# driver), or inferred samples with stated confidence. Never invents a field, never silently resolves a mismatch. | [SKILL.md](skills/claude-skills/api-mongodb-mapping/SKILL.md) · [DEVIN-USAGE.md](skills/claude-skills/api-mongodb-mapping/DEVIN-USAGE.md) | Yes: [stub](.agents/skills/api-mongodb-mapping/SKILL.md) + [KB](skills/ide-references/devin/api-mongodb-mapping.knowledge.md) |
+| **repo-architecture-blueprint** | Analyzes any repository and produces a standing `<Repo>_Architecture_Blueprint.md`: auto-detected stack and architectural pattern, components, layers, cross-cutting concerns, extension points, ADRs, and **mandatory** Mermaid architecture and data-flow diagrams. Stack-agnostic and repo-agnostic, so it runs unmodified against the next repository. | [SKILL.md](skills/claude-skills/repo-architecture-blueprint/SKILL.md) · [DEVIN-USAGE.md](skills/claude-skills/repo-architecture-blueprint/DEVIN-USAGE.md) · [example output](SkillsMCP_Architecture_Blueprint.md) | Yes: [stub](.agents/skills/repo-architecture-blueprint/SKILL.md) + [KB](skills/ide-references/devin/repo-architecture-blueprint.knowledge.md) |
 
 ---
 
@@ -135,14 +135,14 @@ Start with [mcp/README.md](mcp/README.md) for the full tool-by-tool reference.
 | --- | --- | --- | --- |
 | [rdl_generation_server.py](mcp/rdl_generation_server.py) | **Yes** | `get_json_spec_schema`, `build_rdl`, `validate_rdl_file`, `field_expression`, `list_reference_topics` / `get_reference`, `list_examples` / `get_example` | Nothing. Python 3.9+ stdlib; `fastmcp` only to serve over stdio. Thin launcher for [rdl-generation/scripts/mcp_server.py](skills/claude-skills/rdl-generation/scripts/mcp_server.py) |
 | [sqlserver_schema_server.py](mcp/sqlserver_schema_server.py) | **Yes**, with a driver | 15 read-only tools: `mssql_list_odbc_drivers`, `mssql_test_connection`, `mssql_list_databases` / `_schemas` / `_tables`, `mssql_describe_table`, `mssql_list_relationships` / `_indexes`, `mssql_table_stats`, `mssql_list_programmability`, `mssql_get_definition`, `mssql_run_query`, `mssql_build_schema_digest`, `mssql_generate_skill`, `mssql_get_reference` | `pip install pyodbc fastmcp sqlglot`, a Microsoft ODBC driver, and Windows Integrated Auth to the target. Thin launcher for [sqlserver_schema_mcp.py](skills/claude-skills/sql-server-schema/scripts/sqlserver_schema_mcp.py) |
-| [report_studio_server.py](mcp/report_studio_server.py) | **No — reference only** | `list_grounding`, `get_ir_schema`, `validate_ir`, `render_report`, `generate_from_rdl`, `batch_generate`, `fix_pbip` | A backend `app.core.*` tree not included here. See [docs/minimal-backend-keep-set.md](docs/minimal-backend-keep-set.md) |
-| [pbi_refine_server.py](mcp/pbi_refine_server.py) | **No — reference only** | `validate_dax`, `get_schema`, `get_visual_config`, `apply_patch`, `export_page_png`, `export_visual_png`, `compare_visuals`, `structural_compare` | The same backend tree |
+| [report_studio_server.py](mcp/report_studio_server.py) | **No, reference only** | `list_grounding`, `get_ir_schema`, `validate_ir`, `render_report`, `generate_from_rdl`, `batch_generate`, `fix_pbip` | A backend `app.core.*` tree not included here. See [docs/minimal-backend-keep-set.md](docs/minimal-backend-keep-set.md) |
+| [pbi_refine_server.py](mcp/pbi_refine_server.py) | **No, reference only** | `validate_dax`, `get_schema`, `get_visual_config`, `apply_patch`, `export_page_png`, `export_visual_png`, `compare_visuals`, `structural_compare` | The same backend tree |
 
 > **The one trap worth knowing up front.** `fastmcp` depends on a PyPI package
 > called `mcp`, and this repository's folder is *also* called `mcp`. Whenever
 > the repository root is on `sys.path`, `import mcp` resolves to the folder and
 > fastmcp fails from inside its own internals. **Launch servers by path**
-> (`python mcp/sqlserver_schema_server.py`) — never `python -m mcp.<name>` from
+> (`python mcp/sqlserver_schema_server.py`), never `python -m mcp.<name>` from
 > the repository root, and never put the repository root on `PYTHONPATH`.
 > `sqlserver_schema_server.py` carries a startup check that detects the
 > collision and names the fix.
@@ -164,7 +164,7 @@ result = mssql_describe_table("dbo.Claim", database="OrdersDW")
 Scans an SSRS/SSIS estate, builds a lineage graph from source tables through
 ETL packages to reports, finds duplicate or overlapping reports, and answers
 "does a report like this already exist?" from a natural-language description.
-Zero dependency on any host application — copy it into another repository and
+Zero dependency on any host application: copy it into another repository and
 it works. See [skills/report-lineage/README.md](skills/report-lineage/README.md)
 and [PORTING.md](skills/report-lineage/PORTING.md).
 
@@ -186,17 +186,17 @@ land in shell history or a process list.
 ### Per-skill CLIs
 
 ```bash
-# rdl-generation — no install step, stdlib only
+# rdl-generation: no install step, stdlib only
 python skills/claude-skills/rdl-generation/scripts/validate_rdl.py your-report.rdl
 
-# sql-server-schema — pip install pyodbc fastmcp sqlglot
+# sql-server-schema: pip install pyodbc fastmcp sqlglot
 python skills/claude-skills/sql-server-schema/scripts/cli.py drivers
 python skills/claude-skills/sql-server-schema/scripts/cli.py test-connection --server YOURSERVER
 python skills/claude-skills/sql-server-schema/scripts/cli.py digest --database YOURDB
 python skills/claude-skills/sql-server-schema/scripts/cli.py generate <digest.json> --dry-run
 python skills/claude-skills/sql-server-schema/scripts/cli.py example
 
-# extract-engine — pip install polars pyodbc openpyxl click
+# extract-engine: pip install polars pyodbc openpyxl click
 extract load-config     --workbook <path> --feed <name> [--dry-run] [--allow-config-write]
 extract validate-config --feed <name>
 extract dry-run         --feed <name>
@@ -204,17 +204,17 @@ extract explain         --feed <name> --dataset <name> --mode sql [--out <path>]
 extract deploy-views    --feed <name> [--i-understand-this-writes-to-the-database]
 extract run             --feed <name> [--mode polars|sql] [--resume --run-id N]
 
-# mapping-driven-loader-pipeline — pip install openpyxl
+# mapping-driven-loader-pipeline: pip install openpyxl
 python skills/claude-skills/mapping-driven-loader-pipeline/scripts/mapping_reader.py \
     report --workbook <mapping.xlsx>
 
-# api-mongodb-mapping — stdlib, plus pyyaml for .yaml specs
+# api-mongodb-mapping: stdlib, plus pyyaml for .yaml specs
 python skills/claude-skills/api-mongodb-mapping/scripts/openapi_reader.py report --spec <spec.yaml>
 python skills/claude-skills/api-mongodb-mapping/scripts/json_sample_schema_reader.py report --samples <docs.json>
 ```
 
 `extract-engine` also ships seed scripts that stand up a three-dataset sample
-feed against LocalDB in one command — see
+feed against LocalDB in one command. See
 [extract-engine/SKILL.md](skills/claude-skills/extract-engine/SKILL.md)
 ("Quickstart: seed scripts + the sample workbook").
 
@@ -242,16 +242,16 @@ by path and Devin reads them with its normal file tools *when they are in its
 workspace*. Two consequences:
 
 1. Copy the **whole skill folder**, not just `SKILL.md`, whenever the skill has
-   `references/` or `scripts/` it depends on — which is every skill here except
+   `references/` or `scripts/` it depends on, which is every skill here except
    `repo-architecture-blueprint`.
 2. Vendor into the repository whose code is being worked on. If the API you
    want mapped lives in repo B, the skill folder goes into repo B.
 
-### 6.2 Import a skill — step by step
+### 6.2 Import a skill, step by step
 
-**Step 1 — pick the skill** from [section 3](#3-skill-catalog).
+**Step 1: pick the skill** from [section 3](#3-skill-catalog).
 
-**Step 2 — copy the full folder into your target repository.**
+**Step 2: copy the full folder into your target repository.**
 
 ```bash
 # from the root of the repo Devin will work on
@@ -273,7 +273,7 @@ New-Item -ItemType Directory -Force .agents\skills
 Copy-Item -Recurse C:\path\to\SkillsMCP\skills\claude-skills\rdl-generation .agents\skills\rdl-generation
 ```
 
-**Step 3 — check the YAML frontmatter survived the copy.** `name`,
+**Step 3: check the YAML frontmatter survived the copy.** `name`,
 `description`, and `triggers` are what make Devin auto-select the skill. A
 `SKILL.md` with mangled frontmatter is ignored or mis-selected.
 
@@ -281,7 +281,7 @@ Copy-Item -Recurse C:\path\to\SkillsMCP\skills\claude-skills\rdl-generation .age
 head -n 5 .agents/skills/rdl-generation/SKILL.md
 ```
 
-**Step 4 — commit the path to the branch Devin is on.** Discovery happens from
+**Step 4: commit the path to the branch Devin is on.** Discovery happens from
 the checked-out branch, so an uncommitted skill folder is invisible to Devin
 cloud.
 
@@ -291,7 +291,7 @@ git commit -m "Vendor rdl-generation skill for Devin"
 git push
 ```
 
-**Step 5 — install the skill's prerequisites in Devin's environment.** See the
+**Step 5: install the skill's prerequisites in Devin's environment.** See the
 [prerequisite matrix](#9-prerequisite-matrix). For example:
 
 ```bash
@@ -301,15 +301,15 @@ npm i -g @microsoft/powerbi-report-authoring-cli@latest \
          @microsoft/powerbi-modeling-mcp@latest    # vendored Power BI skills, Node >= 20
 ```
 
-**Step 6 — invoke it.**
+**Step 6: invoke it.**
 
 | Surface | How |
 | --- | --- |
 | Devin Chat / Desktop | `@skills:<skill-name>` |
 | Devin CLI | `/<skill-name>` |
-| Any | Describe the task — `description` and `triggers` are written for auto-selection |
+| Any | Describe the task; `description` and `triggers` are written for auto-selection |
 
-**Step 7 — verify the skill actually loaded.** Each skill has a behavioural
+**Step 7: verify the skill actually loaded.** Each skill has a behavioural
 tell. `api-mongodb-mapping` must ask about the identity/key field and about
 null-vs-missing before producing a document; if it doesn't, the skill wasn't
 loaded. `repo-architecture-blueprint` must emit Mermaid diagrams. Where a skill
@@ -329,7 +329,7 @@ already:
 These are stubs. The canonical copy, with all `references/`, `scripts/`, and
 `examples/`, stays under [skills/claude-skills/](skills/claude-skills/).
 
-### 6.4 Option B — Devin Desktop beta skills
+### 6.4 Option B: Devin Desktop beta skills
 
 Confirm the menu path against your Desktop build.
 
@@ -337,11 +337,11 @@ Confirm the menu path against your Desktop build.
 2. Add a skill, paste the contents of the chosen `SKILL.md`.
 3. **Keep the YAML frontmatter intact.**
 4. Because a pasted skill has no `references/` beside it, *also* point Desktop
-   at this repository — and at the repository being worked on, if different. A
+   at this repository, and at the repository being worked on, if different. A
    pasted `SKILL.md` alone produces plausible-looking output that skips the
    skill's discovery rules and stop conditions.
 
-### 6.5 Devin knowledge-base entries — a lighter alternative
+### 6.5 Devin knowledge-base entries: a lighter alternative
 
 If you want the guidance without vendoring a folder, six skills have condensed
 Devin knowledge-base entries (trigger plus content, one concern per entry) in
@@ -376,7 +376,7 @@ exact configuration surface on your own Devin seat.
   `sql-server-schema` and `extract-engine` both assume Windows auth to an
   on-premises SQL Server. Devin can *generate* a pipeline perfectly well, but
   *running* it against an on-prem server with Kerberos has to happen on a
-  Windows host — yours, not Devin's. Decide this before you tell Devin to "run
+  Windows host: yours, not Devin's. Decide this before you tell Devin to "run
   it", or you get a connection failure that looks like a code defect.
 - **Skip the Power BI Desktop bridge** on headless Linux.
 - **Pin the source commit** when you vendor, so you know exactly what you
@@ -399,11 +399,11 @@ with the evidence log in
 
 These read `SKILL.md` natively.
 
-**Option A — point at this repository in place.** Open a session with this
+**Option A: point at this repository in place.** Open a session with this
 repository in the workspace and name the skill; `skills/claude-skills/<name>/`
 and `skills/vendor/microsoft-fabric/<name>/` are read directly.
 
-**Option B — install into a project.** Copy the whole skill folder into the
+**Option B: install into a project.** Copy the whole skill folder into the
 consuming project:
 
 ```bash
@@ -411,20 +411,20 @@ mkdir -p .claude/skills
 cp -r /path/to/SkillsMCP/skills/claude-skills/sql-server-schema .claude/skills/
 ```
 
-**Option C — install for your user, across all projects.**
+**Option C: install for your user, across all projects.**
 
 ```bash
 cp -r /path/to/SkillsMCP/skills/claude-skills/rdl-generation ~/.claude/skills/
 ```
 
 MCP servers come from [.mcp.json](.mcp.json) when this repository is the
-workspace — see [section 8](#8-step-by-step-wire-up-an-mcp-server).
+workspace. See [section 8](#8-step-by-step-wire-up-an-mcp-server).
 
 ### Windsurf / Cascade
 
 Windsurf follows the same open Agent Skills standard.
 
-1. Vendor into `.windsurf/skills/<name>/` **or** `.agents/skills/<name>/` —
+1. Vendor into `.windsurf/skills/<name>/` **or** `.agents/skills/<name>/`;
    both are recognized.
 2. Install the skill's prerequisites, exactly as in section 6, step 5.
 3. Register MCP servers via Windsurf's MCP config (commonly
@@ -450,7 +450,7 @@ cp /path/to/SkillsMCP/skills/ide-references/copilot/copilot-instructions.md \
    .github/copilot-instructions.md
 ```
 
-For MCP in VS Code, copy [.vscode/mcp.json](.vscode/mcp.json) — it prompts for
+For MCP in VS Code, copy [.vscode/mcp.json](.vscode/mcp.json); it prompts for
 the server and database rather than hardcoding them.
 
 ### Any other tool, or a human reader
@@ -462,20 +462,20 @@ holds plain-markdown playbooks with no frontmatter:
 [ssrs-report-creation](skills/ide-references/vendor-neutral/ssrs-report-creation-playbook.md).
 
 > **These variants are derived views, not a second source of truth.** The full
-> detail — every reference doc, working example, builder, validator, and MCP
-> server — lives only under `skills/claude-skills/`. See
+> detail (every reference doc, working example, builder, validator, and MCP
+> server) lives only under `skills/claude-skills/`. See
 > [skills/ide-references/README.md](skills/ide-references/README.md).
 
 ---
 
 ## 8. Step-by-step: wire up an MCP server
 
-### RDL generation — zero configuration
+### RDL generation: zero configuration
 
-**Step 1 — optional dependency.** `pip install fastmcp`, needed only to serve
+**Step 1: optional dependency.** `pip install fastmcp`, needed only to serve
 over stdio; the tools are importable Python functions without it.
 
-**Step 2 — register it.** In your MCP client's config, point at the real server
+**Step 2: register it.** In your MCP client's config, point at the real server
 by absolute path:
 
 ```json
@@ -489,19 +489,19 @@ by absolute path:
 }
 ```
 
-**Step 3 — smoke-test it.** `python mcp/rdl_generation_server.py` should start
+**Step 3: smoke-test it.** `python mcp/rdl_generation_server.py` should start
 without error. Then ask the agent for `get_json_spec_schema()`.
 
-### SQL Server schema — needs a driver and a Kerberos ticket
+### SQL Server schema: needs a driver and a Kerberos ticket
 
-**Step 1 — install prerequisites.**
+**Step 1: install prerequisites.**
 
 ```bash
 pip install pyodbc fastmcp sqlglot
 # plus a Microsoft ODBC Driver for SQL Server (17 or 18)
 ```
 
-**Step 2 — prove the connection before involving any agent.**
+**Step 2: prove the connection before involving any agent.**
 
 ```bash
 python skills/claude-skills/sql-server-schema/scripts/cli.py drivers
@@ -511,7 +511,7 @@ python skills/claude-skills/sql-server-schema/scripts/cli.py test-connection --s
 An `auth_scheme` of `KERBEROS` or `NTLM` confirms Windows Integrated Auth
 reached the server.
 
-**Step 3 — register it.**
+**Step 3: register it.**
 
 ```json
 {
@@ -537,11 +537,11 @@ for the self-signed-certificate case ODBC Driver 18 rejects by default.
 session. There is no password parameter anywhere in the API, and a build-time
 assertion (`assert_no_credentials`) fails if one is ever added.
 
-**Step 4 — for VS Code**, [.vscode/mcp.json](.vscode/mcp.json) already does
+**Step 4, for VS Code:** [.vscode/mcp.json](.vscode/mcp.json) already does
 this with `promptString` inputs, so the server and database are asked for at
 startup instead of committed.
 
-**Step 5 — for this repository in Claude Code**, [.mcp.json](.mcp.json)
+**Step 5, for this repository in Claude Code:** [.mcp.json](.mcp.json)
 registers both standalone servers already; set `SQLSERVER_MCP_SERVER` in your
 environment and restart the session.
 
@@ -553,7 +553,7 @@ Full client-setup reference:
 `report_studio_server.py` and `pbi_refine_server.py` import from a backend
 `app.core.*` tree that is not in this repository. To make them run, follow the
 keep-set in [docs/minimal-backend-keep-set.md](docs/minimal-backend-keep-set.md)
-— the smallest slice of backend needed for the deterministic SSRS-to-PBIP
+, the smallest slice of backend needed for the deterministic SSRS-to-PBIP
 pipeline. Until then, treat them as documentation of the tool surface and the
 design pattern.
 
@@ -563,15 +563,15 @@ design pattern.
 
 | Component | Python | Pip packages | Other |
 | --- | --- | --- | --- |
-| rdl-generation | 3.9+ | none (`fastmcp` for stdio MCP only) | — |
-| ssrs-report-creation | — | none | Documentation only |
+| rdl-generation | 3.9+ | none (`fastmcp` for stdio MCP only) | n/a |
+| ssrs-report-creation | n/a | none | Documentation only |
 | sql-server-schema | 3.9+ | `pyodbc`, `sqlglot`, `fastmcp` | Microsoft ODBC Driver 17/18; Windows Integrated Auth to the target |
 | extract-engine | 3.10+ | `polars`, `pyodbc`, `openpyxl`, `click` | Reachable SQL Server (LocalDB or Docker); ODBC Driver 18; `EXTRACT_ENGINE_SERVER` / `EXTRACT_ENGINE_DATABASE` |
 | mapping-driven-loader-pipeline | 3.10+ | `openpyxl` to generate; `pyodbc` to run | ODBC Driver 18, only to run the generated pipeline |
 | api-mongodb-mapping | 3.9+ | `pyyaml`, only for `.yaml` / `.yml` specs | No database connection, no HTTP call |
-| repo-architecture-blueprint | — | none | Reads files, writes one Markdown document |
+| repo-architecture-blueprint | n/a | none | Reads files, writes one Markdown document |
 | report-lineage | 3.9+ | `pip install -e .`; extras `sqlparse`, `server` | `requests` only for `scan-server` |
-| Vendored Power BI skills | — | — | Node >= 20; `@microsoft/powerbi-report-authoring-cli`, `@microsoft/powerbi-modeling-mcp`; `az` CLI for the management skill |
+| Vendored Power BI skills | n/a | n/a | Node >= 20; `@microsoft/powerbi-report-authoring-cli`, `@microsoft/powerbi-modeling-mcp`; `az` CLI for the management skill |
 
 `extract-engine` deliberately uses its own `EXTRACT_ENGINE_*` namespace,
 separate from `sql-server-schema`'s `SQLSERVER_MCP_*`, so the two never bleed
