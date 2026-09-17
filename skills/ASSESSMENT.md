@@ -315,6 +315,8 @@ backend file each module was derived from so the two can be diffed later.
 | Lineage / duplicates / search cannot leave this repo | `skills/report-lineage/`: installable package, CLI, tests, porting guide |
 | No SSRS Report Server *discovery* path that works standalone | `reportlineage/scanners/report_server.py`: REST v2.0, catalog listing plus definition download |
 | No searchable index over an estate | `reportlineage/search.py`: inverted index with term / table / column scoring |
+| No way to learn the shape of the databases the RDL datasets actually query (added 2026-09-08) | `skills/claude-skills/sql-server-schema/`: Windows-auth connection over pyodbc, the `sys.*` catalog reads, a portable schema digest, and a deterministic skill-pack generator, exposed as an MCP server and a CLI |
+| Lineage stops at the `EXEC` frontier for stored-procedure-backed datasets (added 2026-09-08) | The same skill's `mssql_get_definition` supplies the `proc_body_lookup` that `reportlineage.builder.build_estate` has always accepted and nothing ever provided |
 
 ---
 
@@ -337,6 +339,23 @@ backend file each module was derived from so the two can be diffed later.
    trusting `retire` recommendations in a new estate.
 5. **No credentials are stored.** The scanner reads them from environment
    variables or explicit arguments only.
+6. **Generated schema packs are customer data** (added 2026-09-08). A pack
+   produced by `sql-server-schema` names internal servers, databases, tables
+   and columns. It is written outside version control by default, the generator
+   refuses to write into `skills/`, `mcp/` or `docs/` at all and refuses any
+   other in-repository path that `git check-ignore` does not confirm, and every
+   pack carries a self-ignoring `.gitignore` plus a do-not-commit header. The
+   residual risk is a human copying one in by hand.
+7. **Schema classification is heuristic** (added 2026-09-08). Fact, dimension,
+   bridge and lookup roles, and the importance score behind the tiering, are
+   name, key and cardinality rules rather than semantics.
+   `references/schema-digest-format.md` documents every rule and each
+   classified table carries the reasons that fired, so a wrong call is visible
+   rather than silent. Recalibrate `max_tier1_tables` per estate.
+8. **Windows Integrated Auth constrains where the server can run** (added
+   2026-09-08). It authenticates as whoever launched it, so it needs a Windows
+   session holding a Kerberos ticket for the domain account. A Linux-hosted or
+   service-account-hosted agent cannot use it against an on-premises server.
 
 ---
 
@@ -352,10 +371,47 @@ project, these cover designing, authoring, and publishing it. See
 scope rationale, and the one relative-link adaptation made to fit the
 vendored layout.
 
+## 6a. SQL Server schema analysis (added 2026-09-08)
+
+`skills/claude-skills/sql-server-schema/` closes the one gap every other skill
+here shares: everything else works on files, and nothing could reach the
+databases those files describe.
+
+Design decisions worth recording:
+
+- **The digest is the seam.** The live server writes a `schema_digest.json`;
+  the generator reads one and never opens a connection. That makes the digest
+  reviewable before any documentation is produced, makes the generator
+  testable against a fixture, makes a pack regenerable on a machine with no
+  ODBC driver, and makes two digests of the same database diff cleanly as a
+  schema-drift detector.
+- **`skillgen.py`, `analyze.py` and `guardrails.py` are standard library only**
+  and import no driver. Only `connection.py` and `catalog.py` need `pyodbc`.
+- **No LLM call anywhere.** The generator is deterministic templating over
+  sorted collections, consistent with the `ENFORCE_NO_EGRESS` posture of
+  `mcp/report_studio_server.py`. Given the same digest, byte-identical output.
+- **The join key is reused, not reinvented.** `analyze.table_signature`
+  produces the same `database::schema.table` string as
+  `reportlineage.sql_refs.TableRef.signature()`, and a test imports the real
+  class to assert they agree, so lineage and schema knowledge join with no
+  mapping layer.
+- **Read-only is structural, not configured.** There is no write tool to
+  disable and no flag to leave off.
+- **The build-versus-adopt reasoning is written down** in that skill's
+  `references/existing-tools-and-alternatives.md`, covering Microsoft's Data
+  API builder based SQL MCP Server and the community MSSQL MCP servers, so the
+  next person does not repeat the evaluation.
+
 ## 7. Where to start reading
 
 - New to the estate problem: `skills/report-lineage/README.md`, then run
   `python -m reportlineage scan <folder>`.
+- Understanding the database behind a report:
+  `skills/claude-skills/sql-server-schema/SKILL.md`, then run
+  `scripts/cli.py test-connection`.
+- Seeing what a generated schema pack looks like without touching a real
+  database: `skills/claude-skills/sql-server-schema/examples/generated-pack/`,
+  built from the fictional digest beside it.
 - Authoring an RDL by hand or with an agent:
   `skills/claude-skills/rdl-generation/SKILL.md`.
 - Standing up a new SSRS report end to end:

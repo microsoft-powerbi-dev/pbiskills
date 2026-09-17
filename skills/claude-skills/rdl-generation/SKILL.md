@@ -96,6 +96,10 @@ come back here for the XML.
    without knowing the column names and types the query returns. Run the query,
    read the DDL, or read an existing dataset: do not guess. Guessed field
    names produce a report that opens and renders `#Error` in every cell.
+   `skills/claude-skills/sql-server-schema/` is how to satisfy this against a
+   live on-premises database: it reads the real column names and types out of
+   the catalog, and can generate a per-database reference pack so you do not
+   have to reconnect every time.
 3. **Build in order:** `DataSources` → `DataSets` → `ReportParameters` →
    `ReportSections/ReportSection/Body/ReportItems` → `Page`.
 4. **Emit.** Either use `scripts/rdl_builder.py` (no third-party dependencies)

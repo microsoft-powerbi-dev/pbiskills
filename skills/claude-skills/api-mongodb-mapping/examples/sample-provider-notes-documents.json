@@ -1,0 +1,25 @@
+[
+  {
+    "_id": { "$oid": "64f1a2b3c4d5e6f7a8b9c0d1" },
+    "providerRef": "64f1a2b3c4d5e6f7a8b9c0aa",
+    "note": "Initial verification call completed.",
+    "tag": "verification",
+    "createdAt": { "$date": "2026-01-05T14:32:00Z" },
+    "priority": 2
+  },
+  {
+    "_id": { "$oid": "64f1a2b3c4d5e6f7a8b9c0d2" },
+    "providerRef": "64f1a2b3c4d5e6f7a8b9c0ab",
+    "note": "Follow-up needed on address change.",
+    "tag": "follow-up",
+    "createdAt": { "$date": "2026-01-06T09:15:00Z" },
+    "priority": "high"
+  },
+  {
+    "_id": { "$oid": "64f1a2b3c4d5e6f7a8b9c0d3" },
+    "providerRef": "64f1a2b3c4d5e6f7a8b9c0ac",
+    "note": "Closed, no action.",
+    "tag": null,
+    "createdAt": { "$date": "2026-01-07T11:00:00Z" }
+  }
+]

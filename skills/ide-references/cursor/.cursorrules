@@ -1,7 +1,8 @@
-# SSRS / RDL rules for this repository
+# SSRS / RDL and SQL Server rules for this repository
 
-These rules apply whenever a change touches an `.rdl` file, generates one, or
-concerns SSRS / Power BI Paginated report creation.
+These rules apply whenever a change touches an `.rdl` file, generates one,
+concerns SSRS / Power BI Paginated report creation, or connects to a SQL Server
+to read its schema.
 
 ## RDL structure
 
@@ -57,11 +58,49 @@ and more than about five Tablix or Chart regions on one report.
 3. Confirm every measurement has a unit.
 4. Confirm `PageHeader` / `PageFooter` are inside `Page`.
 
+## SQL Server schema work
+
+These rules apply whenever a change connects to an on-premises SQL Server, or
+reads a database's structure to write a query or scope a migration.
+
+- Connect with Windows Integrated Auth: `Trusted_Connection=yes`. Never put a
+  username or password in a connection string. `Integrated Security=SSPI` is
+  ADO.NET syntax and is silently ignored by ODBC.
+- Never hardcode an ODBC driver version. Enumerate installed drivers and take
+  the highest `ODBC Driver NN for SQL Server`, falling back to `SQL Server`.
+  On driver 18 and above add `Encrypt=yes;TrustServerCertificate=yes`, because
+  18 validates the certificate chain by default and most on-premises servers
+  are self-signed.
+- Read metadata from `sys.*`, never `INFORMATION_SCHEMA`: the ANSI views cannot
+  express identity or computed columns, included or filtered index columns, or
+  an untrusted foreign key, and truncate routine definitions at 4000 characters.
+- Row counts come from `sys.dm_db_partition_stats` filtered to
+  `index_id IN (0,1)`, never `COUNT(*)` and never `sys.sysindexes`.
+- `max_length` is in bytes, so `nvarchar(50)` reports 100 and `-1` means MAX.
+- Foreign keys return one row per column: group by constraint and order by
+  `constraint_column_id`, or a composite join clause comes out wrong.
+- Resolve an object name to `object_id` via `OBJECT_ID(?)` and filter on the
+  integer. Never interpolate a caller-supplied identifier into SQL.
+- Keep it read-only: autocommit off, unconditional rollback, and reject any
+  statement that is not a single SELECT before sending it.
+- Detect soft-delete and type-2 dimension columns before writing a WHERE
+  clause. Omitting a soft-delete filter silently returns retired rows; joining
+  an SCD2 dimension without a currency filter fans facts out across history.
+- Never return values from a column named for an identifier or a health
+  attribute (ssn, tax id, passport, licence, card, account number, dob,
+  patient, mrn, npi, diagnosis, icd, password, token). Name the column, mark it
+  do-not-select, and do not read it.
+- Never commit a generated schema digest or skill pack: they name internal
+  servers, databases, tables and columns, and this repository is public.
+
 ## Full reference
 
 `skills/claude-skills/rdl-generation/` (RDL authoring: structure, datasets,
 Tablix/Chart, expressions, units, schema versions, a validator script, and
-five working examples) and
+five working examples),
 `skills/claude-skills/ssrs-report-creation/` (the end-to-end workflow:
 requirements, data sources, design patterns, export, deployment,
-performance, Fabric migration).
+performance, Fabric migration), and
+`skills/claude-skills/sql-server-schema/` (connecting to an on-premises SQL
+Server, the catalog views, read-only guardrails, schema digests, and
+per-database skill packs).
