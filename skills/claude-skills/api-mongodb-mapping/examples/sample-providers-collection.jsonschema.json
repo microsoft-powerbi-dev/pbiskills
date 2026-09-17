@@ -1,0 +1,43 @@
+{
+  "_comment": "Fictional $jsonSchema validator for the 'providers' collection. This is the authoritative-schema case: when a validator like this exists (via db.createCollection or collMod), prefer it over sample-document inference. Committed as a fixture; no real data.",
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["_id", "sourceSystemId", "npi", "displayName", "status"],
+    "properties": {
+      "_id": { "bsonType": "objectId" },
+      "sourceSystemId": {
+        "bsonType": "string",
+        "description": "Mirrors the external API's externalProviderId"
+      },
+      "npi": { "bsonType": "string" },
+      "displayName": { "bsonType": "string" },
+      "status": {
+        "enum": ["ACTIVE", "INACTIVE", "PENDING", "UNKNOWN"]
+      },
+      "isAcceptingPatients": {
+        "bsonType": ["bool", "null"]
+      },
+      "specialties": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "object",
+          "properties": {
+            "code": { "bsonType": "string" },
+            "label": { "bsonType": "string" }
+          }
+        }
+      },
+      "address": {
+        "bsonType": "object",
+        "properties": {
+          "line1": { "bsonType": "string" },
+          "city": { "bsonType": "string" },
+          "region": { "bsonType": "string" },
+          "postalCode": { "bsonType": "string" }
+        }
+      },
+      "lastSyncedAt": { "bsonType": "date" },
+      "createdAt": { "bsonType": "date" }
+    }
+  }
+}

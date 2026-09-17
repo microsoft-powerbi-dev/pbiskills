@@ -1,0 +1,102 @@
+# Fictional external API used as the worked example for this skill. No real
+# vendor, no real endpoint, no real data. Regenerate nothing - this file is
+# committed as-is and is the fixture `openapi_reader.py` is tested against.
+openapi: 3.0.3
+info:
+  title: Sample External Provider Directory API
+  version: "1.2.0"
+paths:
+  /providers/{providerId}:
+    get:
+      operationId: getProvider
+      summary: Fetch one provider record by external identifier
+      responses:
+        "200":
+          description: Provider found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+        "404":
+          description: Not found
+  /providers:
+    post:
+      operationId: createProvider
+      summary: Register a new provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+components:
+  schemas:
+    Address:
+      type: object
+      properties:
+        line1:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postalCode:
+          type: string
+          format: zip
+      required:
+        - line1
+        - city
+    Specialty:
+      type: object
+      properties:
+        code:
+          type: string
+          enum: [PCP, CARD, ORTHO, DERM]
+        displayName:
+          type: string
+    Provider:
+      type: object
+      required:
+        - externalProviderId
+        - npi
+        - name
+        - status
+      properties:
+        externalProviderId:
+          type: string
+          description: Vendor's own identifier for this provider
+        npi:
+          type: string
+          format: npi
+          description: National Provider Identifier, 10 digits
+        name:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, PENDING]
+        acceptingNewPatients:
+          type: boolean
+          nullable: true
+        specialties:
+          type: array
+          items:
+            $ref: "#/components/schemas/Specialty"
+        primaryAddress:
+          $ref: "#/components/schemas/Address"
+        lastVerifiedAt:
+          type: string
+          format: date-time
+    ProviderCreateRequest:
+      allOf:
+        - $ref: "#/components/schemas/Provider"
+        - type: object
+          properties:
+            requestedByUserId:
+              type: string
